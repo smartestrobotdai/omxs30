@@ -1,0 +1,14 @@
+{
+  "name": "data-sinker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "daily.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "pg": "^7.8.0"
+  }
+}
