@@ -10,7 +10,7 @@ import sys
 import warnings
 import math
 
-stock_tuple = (5, 14, 28)
+stock_tuple = (3, 5, 14, 26, 28)
 
 df=pd.read_csv('../../data/data.csv.gz', compression='gzip', sep=',')
 df['timestamp'] = pd.to_datetime(df['time_stamp'], format="%Y-%m-%d %H:%M:%S").dt.tz_convert('CET')
@@ -184,8 +184,8 @@ for s_id in stock_tuple:
         df_merged = df_merged.append(df)
     
     
-    for ema in (20):
-        for beta in (99):
+    for ema in (20,):
+        for beta in (99,):
             print("Saving to files for stock id:{} ema:{} beta:{}".format(s_id, ema, beta))
             npy_filename = npy_save_path + "ema{}_beta{}_{}.npy".format(ema, beta, s_id)
             groups = df_merged.set_index('timestamp').groupby(lambda x: x.date())
