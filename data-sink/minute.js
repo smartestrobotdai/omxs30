@@ -1,6 +1,12 @@
 const {pgConfig} = require('./config')
 const { Client } = require('pg')
-const {isWorkingDay, executeQuery, getDateString, fetch, executingWrite} = require('./util')
+const {isWorkingDay, 
+  executeQuery, 
+  getDateString, 
+  fetch, 
+  executingWrite,
+  getDataUrl,
+  getCompletedRecord} = require('./util')
 
 async function checkData() {
   let res = await executeQuery(client, 'SELECT a.stock_id, a.stock_name, MAX(extract(epoch from time_stamp)) as time_stamp FROM stocks a \
@@ -34,12 +40,13 @@ async function fetchMinData(stockId, timestamp) {
   let results = []
   for (let d=timestamp; d <= tsNow; d += 3600*24*1000) {
     let dateString =  getDateString(new Date(d))
-    newResults = await fetch(`https://www.nordnet.se/graph/instrument/11/${stockId}?from=${dateString}&to=${dateString}&fields=last,open,high,low,volume`)
+    let url = getDataUrl(stockId, dateString, dateString)
+    newResults = await fetch(url)
     if (newResults && newResults.length) {
       results.push(...newResults)  
-    }
-    
+    }    
   }
+
   console.log(`fetched data for stock:${stockId}, fetched ${results.length} records`)
   return results
   //console.log(`https://www.nordnet.se/graph/instrument/11/${stockId}?from=${startDay}&to=${today}&fields=last,open,high,low,volume`)  
@@ -49,7 +56,7 @@ async function fetchMinData(stockId, timestamp) {
 async function insertRecords(stockId, records) {
   let count = 0
   records.forEach(async function(record) {
-    let {time, open, high, low, last, volume} = record
+    let {time, open, high, low, last, volume} = getCompletedRecord(record)
     let text = 'INSERT INTO minute(stock_id, time_stamp, open, high, low, last, volume) VALUES($1,to_timestamp($2),$3,$4,$5,$6,$7) \
          ON CONFLICT DO NOTHING'
     let value = [stockId, time/1000, open, high, low, last, Math.trunc(volume)]

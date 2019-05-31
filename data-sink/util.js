@@ -29,6 +29,28 @@ async function fetch(url) {
   })
 }
 
+function getCompletedRecord(record) {
+  let {time, open, high, low, last, volume} = record
+
+  open=open?open:0
+  high=high?high:0
+  low=low?low:0
+  last=last?last:0
+  volume=volume?volume:0
+
+  return {time, open, high, low, last, volume}
+}
+
+function getDataUrl(stockId, from, to) {
+  url = ''
+  if (stockId === '0') {
+    url = `https://www.nordnet.se/graph/indicator/SSE/OMXSPI?from=${from}&to=${to}&fields=last,open,high,low`
+  } else {
+    url = `https://www.nordnet.se/graph/instrument/11/${stockId}?from=${from}&to=${to}&fields=last,open,high,low,volume`
+  }
+  return url
+}
+
 async function executeQuery(client, sql) {
   return new Promise(resolve => {
     client.query(sql, (err, res) => {
@@ -68,3 +90,5 @@ exports.fetch = fetch
 exports.executingWrite = executingWrite
 exports.executeQuery = executeQuery
 exports.getDateString = getDateString
+exports.getDataUrl = getDataUrl
+exports.getCompletedRecord = getCompletedRecord

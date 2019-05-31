@@ -1,6 +1,12 @@
 const {pgConfig} = require('./config')
 const { Client } = require('pg')
-const {isWorkingDay, executeQuery, getDateString, fetch, executingWrite} = require('./util')
+const {isWorkingDay, 
+  executeQuery, 
+  getDateString, 
+  fetch, 
+  executingWrite, 
+  getDataUrl,
+  getCompletedRecord} = require('./util')
 
 async function checkData() {
   let res = await executeQuery(client, 'SELECT a.stock_id, a.stock_name, MAX(extract(epoch from time_stamp)) as time_stamp FROM stocks a \
@@ -40,14 +46,15 @@ async function fetchDailyData(stockId, timestamp) {
   let d2 = new Date(timestamp)
   let today = getDateString(d1)
   let startDay = getDateString(d2)
-  console.log(`https://www.nordnet.se/graph/instrument/11/${stockId}?from=${startDay}&to=${today}&fields=last,open,high,low,volume`)  
-  return await fetch(`https://www.nordnet.se/graph/instrument/11/${stockId}?from=${startDay}&to=${today}&fields=last,open,high,low,volume`)
+  let url = getDataUrl(stockId, startDay, today)
+  return await fetch(url)
 }
 
 async function insertRecord(stockId, records) {
   let count = 0
   records.forEach(async function(record) {
-    let {time, open, high, low, last, volume} = record
+    let {time, open, high, low, last, volume} = getCompletedRecord(record)
+
     let text = 'INSERT INTO daily(stock_id, time_stamp, open, high, low, last, volume) VALUES($1,to_timestamp($2),$3,$4,$5,$6,$7) \
          ON CONFLICT DO NOTHING'
     let value = [stockId, time/1000, open, high, low, last, Math.trunc(volume)]
@@ -71,4 +78,3 @@ client.connect()
   .then(() => {
     process.exit(0)
   })
-
