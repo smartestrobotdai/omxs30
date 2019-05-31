@@ -3,6 +3,10 @@
 # exit when any command fails
 set -e
 
+
+# keep track of the last executed command
+trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
+
 # echo an error message before exiting
 trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
 
@@ -69,5 +73,5 @@ cd ${DIR}
 
 tar -czvf preprocessed-data/preprocessed-data.tar.gz ./preprocessed-data/*.npy
 FILE_ID=`gdrive list | grep "preprocessed-data.tar.gz" | awk '{print $1}'`
-gdrive update ${FILE_ID} preprocessed-data.tar.gz
+gdrive update ${FILE_ID} preprocessed-data/preprocessed-data.tar.gz
 cd ${ORI_DIR}
