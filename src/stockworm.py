@@ -288,18 +288,31 @@ class StockWorm:
                 data[:training_data_length, 2] - 1, testing_total_profit, \
                 data[training_data_length:, 2] - 1
 
-    def report(self):
+    def get_profit_sma(self, window=20):
         training_total_profit, training_daily_profit, \
             testing_total_profit, testing_daily_profit = self.get_historic_metrics()
-        print("training daily:{}".format(training_daily_profit))
+
+        daily_profit = np.concatenate((training_daily_profit[-20:], testing_daily_profit), axis=0)
+        sma = pd.Series(daily_profit).rolling(window).mean().dropna()
+        return sma.values
+
+    def report(self, window=20):
+        training_total_profit, training_daily_profit, \
+            testing_total_profit, testing_daily_profit = self.get_historic_metrics()
+        print("Training daily:{}".format(training_daily_profit))
         print("Training Total Profit: %f" % training_total_profit)
         print("Training Avg Profit: %f" % mean(training_daily_profit))
         print("Training Profit Std %f" % stdev(training_daily_profit))
 
+        training_daily_profit_last_n = self.get_profit_sma(window)
+        total_profit_last_training_days = np.prod(training_daily_profit_last_n+1)-1
+        print("Training Last %d Days Profit: %f" % (window, total_profit_last_training_days))
+        print("Training Last %d Days Avg Profit: %f" % (window, mean(training_daily_profit_last_n)))
+        print("Training Last %d Days Profit Std: %f" % (window, stdev(training_daily_profit_last_n)))
+
         print("Testing Total Profit: %f" % testing_total_profit)
         print("Testing Avg Profit: %f" % mean(testing_daily_profit))
         print("Testing Profit Std %f" % stdev(testing_daily_profit))
-
 
     def plot(self):
         assert(self.historic_data is not None)
