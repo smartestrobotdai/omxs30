@@ -79,4 +79,4 @@ def stdev(list_data):
 
 def create_if_not_exist(path):
     if not os.path.isdir(path):
-        os.mkdir(path)
+        os.makedirs(path)
