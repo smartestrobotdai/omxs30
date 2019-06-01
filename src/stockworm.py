@@ -300,6 +300,7 @@ class StockWorm:
         return sma.values
 
     def report(self, window=20):
+        print("Save Path: %s" % self.save_path)
         training_total_profit, training_daily_profit, \
             testing_total_profit, testing_daily_profit = self.get_historic_metrics()
         print("Training daily:{}".format(training_daily_profit))
@@ -317,6 +318,9 @@ class StockWorm:
         print("Testing Avg Profit: %f" % mean(testing_daily_profit))
         print("Testing Profit Std %f" % stdev(testing_daily_profit))
 
+        overall_profit = np.concatenate((training_daily_profit, testing_daily_profit), axis=0)
+        print("Overall Avg Profit: %f" % mean(overall_profit))
+        print("Overall Profit Std: %f" % stdev(overall_profit))
     def get_training_data_len(self):
         return self.data_manipulator.get_training_data_len()
 
