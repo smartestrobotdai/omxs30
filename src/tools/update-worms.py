@@ -32,6 +32,8 @@ stock_worm_manager.update_worms_from_cache(n_number=number,
 
 
 stock_worm_manager.report()
+total_profit, profit_daily = stock_worm_manager.test()
+print("Overall Profit: %f" % total_profit)
 
 
 
