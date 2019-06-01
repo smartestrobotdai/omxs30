@@ -273,8 +273,8 @@ class StockWorm:
     def get_daily_data(self):
         stock_change_rate = self.historic_data[:,:,3]
         asset_change_rate = self.historic_data[:,:,4]
-        daily_stock_change_rate = np.prod(stock_change_rate+1, axis=1)
-        daily_asset_change_rate = np.prod(asset_change_rate+1, axis=1)
+        daily_stock_change_rate = np.prod(stock_change_rate+1, axis=1) - 1
+        daily_asset_change_rate = np.prod(asset_change_rate+1, axis=1) - 1
         date = self.historic_data[:,0,0]
         return np.stack((date, daily_stock_change_rate, daily_asset_change_rate), axis=1)
 
@@ -282,17 +282,20 @@ class StockWorm:
         assert(self.historic_data is not None)
         data = self.get_daily_data()
         training_data_length = self.data_manipulator.get_training_data_len()
-        training_total_profit = np.prod(data[:training_data_length, 2]) - 1
-        testing_total_profit = np.prod(data[training_data_length:, 2]) - 1
+        training_daily_profit = data[:training_data_length, 2]
+        testing_daily_profit = data[training_data_length:, 2]
+
+        training_total_profit = np.prod(training_daily_profit+1)-1
+        testing_total_profit = np.prod(testing_daily_profit+1)-1
         return training_total_profit, \
-                data[:training_data_length, 2] - 1, testing_total_profit, \
-                data[training_data_length:, 2] - 1
+                training_daily_profit, testing_total_profit, \
+                testing_daily_profit
 
     def get_profit_sma(self, window=20):
         training_total_profit, training_daily_profit, \
             testing_total_profit, testing_daily_profit = self.get_historic_metrics()
 
-        daily_profit = np.concatenate((training_daily_profit[-20:], testing_daily_profit), axis=0)
+        daily_profit = np.concatenate((training_daily_profit[-window:], testing_daily_profit), axis=0)
         sma = pd.Series(daily_profit).rolling(window).mean().dropna()
         return sma.values
 
@@ -314,15 +317,18 @@ class StockWorm:
         print("Testing Avg Profit: %f" % mean(testing_daily_profit))
         print("Testing Profit Std %f" % stdev(testing_daily_profit))
 
+    def get_training_data_len(self):
+        return self.data_manipulator.get_training_data_len()
+
     def plot(self):
         assert(self.historic_data is not None)
-        training_data_length = self.data_manipulator.get_training_data_len()
+        training_data_length = self.get_training_data_len()
         daily_data = self.get_daily_data()
         print("preparing plotting")
         print(daily_data.shape)
         x1 = daily_data[:training_data_length,0]
-        y1 = np.cumprod(daily_data[:training_data_length,1])
-        z1 = np.cumprod(daily_data[:training_data_length,2])
+        y1 = np.cumprod(daily_data[:training_data_length,1]+1)
+        z1 = np.cumprod(daily_data[:training_data_length,2]+1)
 
         plt.subplot(2, 1, 1)
         plt.plot(x1,y1)
@@ -332,8 +338,8 @@ class StockWorm:
         
         plt.gcf().autofmt_xdate()
         x2 = daily_data[training_data_length:, 0]
-        y2 = np.cumprod(daily_data[training_data_length:, 1])
-        z2 = np.cumprod(daily_data[training_data_length:, 2])
+        y2 = np.cumprod(daily_data[training_data_length:, 1]+1)
+        z2 = np.cumprod(daily_data[training_data_length:, 2]+1)
         plt.subplot(2, 1, 2)
         plt.plot(x2,y2)
         plt.plot(x2,z2)

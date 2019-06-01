@@ -46,10 +46,10 @@ class StockWormManager:
       {'name': 'split_daily_data', 'type': 'discrete', 'domain': (0,1)}
      ]
 
-    def __init__(self, stock_name, stock_index, model_save_path, npy_files_path):
+    def __init__(self, stock_name, stock_index, stock_data_path, npy_files_path):
         self.stock_name = stock_name
         self.stock_index = stock_index
-        self.model_save_path = model_save_path
+        self.stock_data_path = stock_data_path
         self.npy_files_path = npy_files_path
         self.worm_list = []
 
@@ -132,13 +132,9 @@ class StockWormManager:
         return np.array(profit_mean).reshape((1,1))
 
     def get_swarm_path(self, start_day_index, end_day_index):
-        return os.path.join(self.model_save_path, 
+        return os.path.join(self.stock_data_path, 
             "{}_{}".format(self.stock_name, self.stock_index),
             "{}-{}".format(start_day_index, end_day_index))
-
-    def get_model_path(self, start_day_index, end_day_index):
-        swarm_path = self.get_swarm_path(start_day_index, end_day_index)
-        return os.path.join(swarm_path, "models")
 
     def get_stockworm_cache_file(self, start_day_index, end_day_index):
         swarm_path = self.get_swarm_path(start_day_index, end_day_index)
@@ -159,13 +155,13 @@ class StockWormManager:
         strategy_list = trade_strategy_factory.create_from_file(strategy_cache_file, NUM_STRATEGIES)
 
         assert(len(top_worms) == n_number)
-        swarm_path = self.get_swarm_path(start_day_index, end_day_index)
+        model_save_path = self.get_model_save_path(start_day_index, end_day_index)
         for i in range(n_number):
           features = top_worms[i, :13]
           features_str = self.get_parameter_str(features)
-          model_save_path = os.path.join(swarm_path, "models", md5(features_str))
-          new_worm = StockWorm(self.stock_index, self.npy_files_path, model_save_path)
-          if os.path.isdir(model_save_path) and new_worm.load() == True:
+          save_path = os.path.join(model_save_path, md5(features_str))
+          new_worm = StockWorm(self.stock_index, self.npy_files_path, save_path)
+          if os.path.isdir(save_path) and new_worm.load() == True:
               pass
           else:
               total_profit, profit_daily, errors_daily = new_worm.init(features, strategy_list, start_day_index, end_day_index)
@@ -188,6 +184,59 @@ class StockWormManager:
         print("Report for Worm No.{}".format(i+1))
         self.worm_list[i].report()
 
+    def get_model_save_path(self, start_day_index, end_day_index):
+      swarm_path = self.get_swarm_path(start_day_index, end_day_index)
+      model_save_path = os.path.join(swarm_path, "models")
+      return model_save_path
+
+    def load(self):
+      model_save_path = self.get_model_save_path(0, 60)
+      directories = [f for f in listdir(model_save_path) if isdir(join(model_save_path, f))]
+      self.worm_list = []
+      for d in directories:
+        new_worm = StockWorm(self.stock_index, self.npy_files_path, d)
+        new_worm.load()
+        self.worm_list.append(new_worm)
+
+    def test(self):
+      profit_sma_list = []
+      testing_profit_daily_list = []
+      for i in range(len(self.worm_list)):
+        print("Report for Worm No.{}".format(i+1))
+        worm = self.worm_list[i]
+        worm.test()
+        training_total_profit, training_daily_profit, \
+            testing_total_profit, testing_daily_profit = worm.get_historic_metrics()
+        profit_sma = worm.get_profit_sma()
+        assert(len(testing_daily_profit) + 1 == len(profit_sma))
+
+        profit_sma_list.append(profit_sma)
+        testing_profit_daily_list.append(testing_profit_daily)
+
+      profit_sma_array = np.array(profit_sma_list)
+      test_profit_daily_array = np.array(testing_profit_daily_list)
+      # go through all the days
+      overall_profit_list = []
+      for i in range(len(profit_sma_array[0])):
+        best_sma_index = np.argmax(profit_sma_array[:,i])
+        overall_profit = test_profit_daily_array[best_sma_index, i]
+        overall_profit_list.append(overall_profit)
+      overall_profit_daily = np.array(overall_profit_list)
+      total_profit = np.prod(overall_profit_daily+1)-1
+      return total_profit, overall_profit_daily
+
+    def plot(self):
+      assert(len(self.worm_list)!=0)
+      plt.subplot(2, 1, 1)
+      for i in range(len(self.worm_list)):
+        worm = self.worm_list[i]
+        daily_data = self.get_daily_data()
+        x1 = daily_data[:training_data_length,0]
+        y1 = np.cumprod(daily_data[:training_data_length,1])
+        z1 = np.cumprod(daily_data[:training_data_length,2])
+
+
+
     def get_save_path(self, X):
         params_str = self.get_parameter_str(X)
         return os.path.join(self.model_save_path, md5(params_str))
@@ -203,6 +252,13 @@ class StockWormManager:
 
 
 if __name__ == '__main__':
-    stock_worm_manager = StockWormManager('Nordel', 5, 'models')
-    stock_worm_manager.search_worms("../models/190128-190423/strategy_cache.txt", "../models/190128-190423/worm_cache.txt", 0, 60, is_test=False)
-    stock_worm_manager.create_from_file()
+    stock_worm_manager = StockWormManager('Nordel', 5, '../stock-data/')
+    stock_worm_manager.load()
+    stock_worm_manager.report()
+    total_profit, overall_profit_daily = stock_worm_manager.test()
+    print("Test finished, total profit: %f" % total_profit)
+
+    #stock_worm_manager.plot()
+
+    #stock_worm_manager.search_worms("../models/190128-190423/strategy_cache.txt", "../models/190128-190423/worm_cache.txt", 0, 60, is_test=False)
+    #stock_worm_manager.create_from_file()
