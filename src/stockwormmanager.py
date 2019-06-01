@@ -109,8 +109,8 @@ class StockWormManager:
             error_mean = cached_result[3]
             print("find from cache. skip...")
         else:
-            save_path = self.get_save_path(features)
-            stock_worm = StockWorm(self.stock_index, self.npy_files_path, save_path)
+            model_save_path = self.get_model_save_path(start_day, end_day, features)
+            stock_worm = StockWorm(self.stock_index, self.npy_files_path, model_save_path)
             total_profit, profit_daily, errors_daily = stock_worm.init(features, 
                 strategy_list, start_day, end_day)
 
@@ -155,13 +155,11 @@ class StockWormManager:
         strategy_list = trade_strategy_factory.create_from_file(strategy_cache_file, NUM_STRATEGIES)
 
         assert(len(top_worms) == n_number)
-        model_save_path = self.get_model_save_path(start_day_index, end_day_index)
         for i in range(n_number):
           features = top_worms[i, :13]
-          features_str = self.get_parameter_str(features)
-          save_path = os.path.join(model_save_path, md5(features_str))
-          new_worm = StockWorm(self.stock_index, self.npy_files_path, save_path)
-          if os.path.isdir(save_path) and new_worm.load() == True:
+          model_save_path = self.get_model_save_path(start_day_index, end_day_index, features)
+          new_worm = StockWorm(self.stock_index, self.npy_files_path, model_save_path)
+          if os.path.isdir(model_save_path) and new_worm.load() == True:
               pass
           else:
               total_profit, profit_daily, errors_daily = new_worm.init(features, strategy_list, start_day_index, end_day_index)
@@ -184,9 +182,10 @@ class StockWormManager:
         print("Report for Worm No.{}".format(i+1))
         self.worm_list[i].report()
 
-    def get_model_save_path(self, start_day_index, end_day_index):
+    def get_model_save_path(self, start_day_index, end_day_index, features):
       swarm_path = self.get_swarm_path(start_day_index, end_day_index)
-      model_save_path = os.path.join(swarm_path, "models")
+      features_str = self.get_parameter_str(features)
+      model_save_path = os.path.join(swarm_path, "models", md5(features_str))
       return model_save_path
 
     def load(self):
@@ -245,11 +244,6 @@ class StockWormManager:
         y1 = np.cumprod(daily_data[:training_data_length,1])
         z1 = np.cumprod(daily_data[:training_data_length,2])
 
-
-
-    def get_save_path(self, X):
-        params_str = self.get_parameter_str(X)
-        return os.path.join(self.model_save_path, md5(params_str))
         
     def get_parameter_str(self, X):
         parameter_str = ""
