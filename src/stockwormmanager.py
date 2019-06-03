@@ -5,6 +5,7 @@ import GPy
 import GPyOpt
 import uuid
 import os.path
+import os
 from datamanipulator import DataManipulator
 from statefullstmmodel import StatefulLstmModel
 from functools import partial
@@ -182,15 +183,18 @@ class StockWormManager:
         print("Report for Worm No.{}".format(i+1))
         self.worm_list[i].report()
 
-    def get_model_save_path(self, start_day_index, end_day_index, features):
+    def get_model_save_path(self, start_day_index, end_day_index, features=None):
       swarm_path = self.get_swarm_path(start_day_index, end_day_index)
-      features_str = self.get_parameter_str(features)
-      model_save_path = os.path.join(swarm_path, "models", md5(features_str))
+      if features is None:
+        model_save_path = os.path.join(swarm_path, "models")
+      else:
+        features_str = self.get_parameter_str(features)
+        model_save_path = os.path.join(swarm_path, "models", md5(features_str))
       return model_save_path
 
     def load(self):
       model_save_path = self.get_model_save_path(0, 60)
-      directories = [f for f in listdir(model_save_path) if isdir(join(model_save_path, f))]
+      directories = [os.path.join(model_save_path, f) for f in os.listdir(model_save_path) if os.path.isdir(os.path.join(model_save_path, f))]
       self.worm_list = []
       for d in directories:
         new_worm = StockWorm(self.stock_index, self.npy_files_path, d)
@@ -256,11 +260,11 @@ class StockWormManager:
 
 
 if __name__ == '__main__':
-    stock_worm_manager = StockWormManager('Nordel', 5, '../stock-data/')
+    stock_worm_manager = StockWormManager('Nordea', 5, '../stock-data/', '../preprocessed-data/')
     stock_worm_manager.load()
     stock_worm_manager.report()
-    total_profit, overall_profit_daily = stock_worm_manager.test()
-    print("Test finished, total profit: %f" % total_profit)
+    #total_profit, overall_profit_daily = stock_worm_manager.test()
+    #print("Test finished, total profit: %f" % total_profit)
 
     #stock_worm_manager.plot()
 

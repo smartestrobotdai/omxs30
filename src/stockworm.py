@@ -77,7 +77,7 @@ class StockWorm:
         return max_total_profit, max_profit_daily, errors_daily
     
     
-    def test(self, end_day_index=None):
+    def test(self, end_date=None):
         # find the start_day_index
         assert(self.learning_end_date != None)
         n_learning_days = self.data_manipulator.get_learning_days()
@@ -87,9 +87,14 @@ class StockWorm:
 
 
         start_day_index = learning_end_day_index + 1 - n_learning_days + n_prediction_days
-
-        if end_day_index is None:
+        print("DEBUG: learning_end_day_index: {}, start_day_index:  {}, n_learning_days:{}, n_prediction_days:{}".format(learning_end_day_index,
+            start_day_index,
+            n_learning_days,
+            n_prediction_days))
+        if end_date is None:
             end_day_index = self.data_manipulator.get_n_days()
+        else:
+            end_day_index = self.data_manipulator.date_2_day_index(end_date) + 1
 
         strategy_data_input, errors_daily = self.test_model_base(start_day_index, end_day_index)
         total_profit, profit_daily, change_rate = self.strategy_model.get_profit(strategy_data_input)
@@ -105,27 +110,27 @@ class StockWorm:
 
 
     def append_historic_data(self, historic_data):
-        last_day_timestamp = self.historic_data[-1,0,0]
-        next_day_timestamp = last_day_timestamp + timedelta(days=1)
-        next_date = timestamp2date(next_day_timestamp)
+        first_date = timestamp2date(historic_data[0,0,0])
         find_date = False
-        for i in range(len(historic_data)):
-            date = timestamp2date(historic_data[i,0,0])
-            if date == next_date:
+        for i in range(len(self.historic_data)):
+            date = timestamp2date(self.historic_data[i,0,0])
+            if date == first_date:
                 find_date = True
                 break
 
         if find_date == True:
-            n_data_to_append = len(historic_data)-i
-            print("new data for {} days appended to historic_data from date:{}, ".format(n_data_to_append,
-                timestamp2date(last_day_timestamp)))
-            print(self.historic_data.shape)
-            self.historic_data = np.concatenate((self.historic_data, historic_data[i:]), axis=0)
+            origin_last_date = timestamp2date(self.historic_data[-1,0,0])
+            last_date = timestamp2date(historic_data[-1,0,0])
+            print("overwritting historic_data ended at date: {} from date: {} to date: {} ".format(origin_last_date, first_date, last_date))
+            self.historic_data = np.concatenate((self.historic_data[:i], historic_data), axis=0)
             print(self.historic_data.shape)
         else:
-            print("append_historic_data: no new data found, aborting...")
-            n_data_to_append = 0
-        return n_data_to_append
+            i+=1
+            origin_last_date = timestamp2date(self.historic_data[-1,0,0])
+            last_date = timestamp2date(historic_data[-1,0,0])
+            print("appending historic_data ended at date: {} from date: {} to date: {} ".format(origin_last_date, first_date, last_date))
+            self.historic_data = np.concatenate((self.historic_data, historic_data), axis=0)
+        return len(historic_data)
 
     def test_model_base(self, start_day_index, end_day_index):
         data_manipulator = self.data_manipulator
@@ -178,7 +183,7 @@ class StockWorm:
         learning_end = n_learning_seqs - n_prediction_seqs
 
 
-        for i in range(0, max(n_training_seqs-n_learning_seqs+1,1), n_prediction_seqs):
+        for i in range(0, max(n_training_seqs+1,1), n_prediction_seqs):
             # the model is ready, we want to do prediction first.
             if self.model.is_initialized() == True:
                 # do prediction first
@@ -199,8 +204,8 @@ class StockWorm:
                     errors = np.concatenate((errors, error), axis=0)
 
             
-            if i + n_learning_seqs >= n_training_seqs:
-                print("expected learning end seq: {}, length of data:{}, no training needed...".format(learning_end, 
+            if i + n_learning_seqs > n_training_seqs:
+                print("expected learning end seq: {}, length of data:{}, training finished".format(learning_end, 
                     n_training_seqs))
                 break
             learning_end = i + n_learning_seqs
@@ -281,7 +286,7 @@ class StockWorm:
     def get_historic_metrics(self):
         assert(self.historic_data is not None)
         data = self.get_daily_data()
-        training_data_length = self.data_manipulator.get_training_data_len()
+        training_data_length = self.get_training_data_len()
         training_daily_profit = data[:training_data_length, 2]
         testing_daily_profit = data[training_data_length:, 2]
 
@@ -290,6 +295,15 @@ class StockWorm:
         return training_total_profit, \
                 training_daily_profit, testing_total_profit, \
                 testing_daily_profit
+
+    def get_last_training_date(self):
+        data = self.get_daily_data()
+        training_data_length = self.get_training_data_len()
+        return timestamp2date(data[training_data_length-1,0])
+
+    def get_last_testing_date(self):
+        data = self.get_daily_data()
+        return timestamp2date(data[-1,0])
 
     def get_profit_sma(self, window=20):
         training_total_profit, training_daily_profit, \
@@ -303,7 +317,9 @@ class StockWorm:
         print("Save Path: %s" % self.save_path)
         training_total_profit, training_daily_profit, \
             testing_total_profit, testing_daily_profit = self.get_historic_metrics()
-        print("Training daily:{}".format(training_daily_profit))
+        
+
+        print("Last Training_Date: %s" % self.get_last_training_date())
         print("Training Total Profit: %f" % training_total_profit)
         print("Training Avg Profit: %f" % mean(training_daily_profit))
         print("Training Profit Std %f" % stdev(training_daily_profit))
@@ -314,6 +330,7 @@ class StockWorm:
         print("Training Last %d Days Avg Profit: %f" % (window, mean(training_daily_profit_last_n)))
         print("Training Last %d Days Profit Std: %f" % (window, stdev(training_daily_profit_last_n)))
 
+        print("Last Testing Date: %s" % self.get_last_testing_date())
         print("Testing Total Profit: %f" % testing_total_profit)
         print("Testing Avg Profit: %f" % mean(testing_daily_profit))
         print("Testing Profit Std %f" % stdev(testing_daily_profit))
@@ -380,19 +397,19 @@ if __name__ == '__main__':
     strategy_list = trade_strategy_factory.create_from_file(strategy_cache_file, 10)
     stock_worm = StockWorm(5, npy_path, 'my_model')
 
-    features=[60.0 , 0.004 , 1.0 , 0.0 , 20.0 , 20.0 ,  1.0 , 99.0,  20.0 , 1.0,  1.0 , 1.0,  1.0]
+    features=[60.0 , 0.004 , 1.0 , 0.0 , 40.0 , 20.0 ,  1.0 , 99.0,  20.0 , 1.0,  1.0 , 1.0,  1.0]
     total_profit, profit_daily, errors_daily = stock_worm.init(features, strategy_list, 0, 60)
-    print("Training finished: total_profit:{}, profit_daily:{}".format(total_profit, profit_daily))
+    print("Training finished: total_profit:{}".format(total_profit))
     print("prod of profit_daily:{}".format(np.prod(np.array(profit_daily)+1)-1))
     stock_worm.save()
 
-    total_profit_test, profit_daily_test, n_data_appended = stock_worm.test()
-    print("Testing finished: total_profit:{}, profit_daily:{}, data for {} days appended".format(total_profit_test, profit_daily_test, n_data_appended))
+    total_profit_test, profit_daily_test, n_data_appended = stock_worm.test("190528")
+    print("Testing finished: total_profit:{}, data for {} days appended".format(total_profit_test, n_data_appended))
     stock_worm.save()
 
     stock_worm2 = StockWorm(5, npy_path, 'my_model')
     stock_worm2.load()
-    stock_worm2.plot()
+    #stock_worm2.plot()
 
 
     stock_worm2.report()
