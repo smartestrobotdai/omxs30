@@ -84,7 +84,7 @@ for stock_id in range(len(stock_id_list)):
 # initialize a new list
 value_result_list = []
 for s_id in range(len(time_series_all_list)):
-    new_list = [None] * len(time_series_all_list[0])
+    new_list = [None] * len(time_series_all_list[s_id])
     value_result_list.append(new_list)
     
 
