@@ -19,30 +19,29 @@ if [ $(date +%u) -gt 5 ]; then
    exit 0
 fi
 
-if [ ! -z ${DIR} ]; then
-  cd ${DIR}
-  echo "changing directory to ${DIR}"
+if [ ! -z ${OMXS30_HOME} ]; then
+  cd ${OMXS30_HOME}
+  echo "changing directory to ${OMXS30_HOME}"
 fi
 
 echo "starting docker containers"
+export PATH=$PATH:/usr/local/bin/:/usr/bin
 docker-compose up -d
 sleep 5
 
 echo "`date` started fetching data"
 echo "node version: `node -v`"
-export PATH=$PATH:/usr/local/bin/:/usr/bin
-docker-compose up -d
 sleep 10
 cd data-sink/
 node daily.js
 node minute.js
 if [ $? -ne 0 ]; then
   echo "fetching data failed"
-  cd $DIR
+  cd $OMXS30_HOME
   exit -1
 fi
 
-cd $DIR
+cd $OMXS30_HOME
 echo "`date` finished fetching data, backup database"
 SUFFIX=`date +%d-%m-%Y"_"%H_%M_%S`
 docker exec -t postgres-omxs pg_dumpall -c -U postgres > dbbackup/dump_$SUFFIX.sql
@@ -69,7 +68,7 @@ sleep 5
 
 cd src/tools
 /usr/bin/python3 -u omx30-prep.py
-cd ${DIR}
+cd ${OMXS30_HOME}
 
 tar -czvf preprocessed-data/preprocessed-data.tar.gz ./preprocessed-data/*.npy
 FILE_ID=`gdrive list | grep "preprocessed-data.tar.gz" | awk '{print $1}'`
