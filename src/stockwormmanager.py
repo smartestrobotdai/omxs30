@@ -22,7 +22,7 @@ class StockWormManager:
       {'name': 'num_layers', 'type': 'discrete', 'domain': (1,2,3,4,5,6,7,8)},
       {'name': 'rnn_type', 'type': 'discrete', 'domain': (0,1,2)},
       {'name': 'learning_period', 'type': 'discrete', 'domain': (20,30,40)},
-      {'name': 'prediction_period', 'type': 'discrete', 'domain': (2,5,10,20)},
+      {'name': 'prediction_period', 'type': 'discrete', 'domain': (5,10,20)},
       {'name': 'n_repeats', 'type': 'discrete', 'domain': (1,3,5,10,20,30,40)},
       {'name': 'beta', 'type': 'discrete', 'domain': (99,)},
       {'name': 'ema', 'type': 'discrete', 'domain': (20,)},
