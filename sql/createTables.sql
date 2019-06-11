@@ -60,3 +60,4 @@ INSERT INTO stocks(stock_id, stock_name) VALUES(361,     'SWMA');
 INSERT INTO stocks(stock_id, stock_name) VALUES(1027,    'TEL2-B');
 INSERT INTO stocks(stock_id, stock_name) VALUES(5095,    'TELIA');
 INSERT INTO stocks(stock_id, stock_name) VALUES(366,     'VOLV-B');
+INSERT INTO stocks(stock_id, stock_name) VALUES(0,     'OMXS30');
