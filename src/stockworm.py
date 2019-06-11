@@ -190,22 +190,23 @@ class StockWorm:
                 prediction_start = learning_end
                 prediction_end = min(prediction_start+n_prediction_seqs, len(data_input))
 
-                print("starting prediction from seq:{} to seq:{}".format(prediction_start, prediction_end-1))
-                outputs = self.model.predict_and_verify(data_input[prediction_start:prediction_end], 
-                            data_output[prediction_start:prediction_end])
+                if prediction_start < prediction_end:
+                    print("starting prediction from seq:{} to seq:{}".format(prediction_start, prediction_end-1))
+                    outputs = self.model.predict_and_verify(data_input[prediction_start:prediction_end], 
+                                data_output[prediction_start:prediction_end])
 
-                y = data_output[prediction_start:prediction_end]
-                error = np.square(outputs-y)
-                if all_outputs is None:
-                    all_outputs = outputs
-                    errors = error
-                else:
-                    all_outputs = np.concatenate((all_outputs, outputs), axis=0)
-                    errors = np.concatenate((errors, error), axis=0)
+                    y = data_output[prediction_start:prediction_end]
+                    error = np.square(outputs-y)
+                    if all_outputs is None:
+                        all_outputs = outputs
+                        errors = error
+                    else:
+                        all_outputs = np.concatenate((all_outputs, outputs), axis=0)
+                        errors = np.concatenate((errors, error), axis=0)
 
             
             if i + n_learning_seqs > n_training_seqs:
-                print("expected learning end seq: {}, length of data:{}, training finished".format(learning_end, 
+                print("expected learning end seq: {}, length of data:{}, training finished".format(i + n_learning_seqs, 
                     n_training_seqs))
                 break
             learning_end = i + n_learning_seqs
