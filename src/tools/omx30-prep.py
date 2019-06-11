@@ -9,8 +9,12 @@ import numpy as np
 import sys
 import warnings
 import math
+sys.path.append("../")
+from util import get_stock_name_by_id, get_stock_id_by_name
 
-stock_tuple = (3, 5, 14, 26, 28)
+stock_name_tuple = ('NDA-SE', 'ESSITY-B', 'GETI-B', 'AZN', 'HM-B') 
+
+
 
 df=pd.read_csv('../../data/data.csv.gz', compression='gzip', sep=',')
 df['timestamp'] = pd.to_datetime(df['time_stamp'], format="%Y-%m-%d %H:%M:%S").dt.tz_convert('CET')
@@ -49,6 +53,14 @@ for stock_index in stock_id_list:
 
 
 # In[ ]:
+def get_stock_index_by_id(stock_id):
+    for i in range(len(stock_id_list)):
+        if stock_id_list[i] == stock_id:
+            return i
+    return None
+
+def get_stock_id_by_index(stock_index):
+    return stock_id_list[stock_index]
 
 
 current_stock_index = 0
@@ -60,22 +72,21 @@ for i in range(len(day_split_index) - 1):
     day_time_series = df.iloc[start_index:end_index]
     time_series_list.append(day_time_series)
     if end_index == stock_split_index[current_stock_index + 1]:
-        print("finished stock: {}, got {} time series".format(current_stock_index, len(time_series_list)))
+        print("finished stock: {}, got {} time series".format(stock_id_list[current_stock_index], len(time_series_list)))
         time_series_all_list.append(time_series_list)
         time_series_list = []
         current_stock_index += 1
 
 
 # In[ ]:
-
-
+print("Checking the minimal change rates:")
 for stock_id in range(len(stock_id_list)):
     diff = time_series_all_list[stock_id][0]['open'].diff()
 
     min_ = diff[diff>=0.005].min()
     open_ = time_series_all_list[stock_id][-1]['open'].mean()
 
-    print("stockid:{} min={}, cost={}".format(stock_id, min_, min_/open_))
+    print("stockid:{} min={}, cost={}".format(stock_id_list[stock_id], min_, min_/open_))
 
 
 # In[ ]:
@@ -89,11 +100,13 @@ for s_id in range(len(time_series_all_list)):
     
 
 #for stock_id in range(len(time_series_all_list)):
-for stock_id in stock_tuple:
-    print("handling stock_id: {}".format(stock_id))
-    for day_id in range(len(time_series_all_list[stock_id])):
+for stock_name in stock_name_tuple:
+    stock_id = get_stock_id_by_name(stock_name)
+    stock_index = get_stock_index_by_id(stock_id)
+    print("handling stock_id: {}, stock_index: {}, stock_name:{}".format(stock_id, stock_index, stock_name))
+    for day_id in range(len(time_series_all_list[stock_index])):
         # :-1 is that we don't like the last record at 17:30 which is a aggregated number.
-        df = time_series_all_list[stock_id][day_id].copy()
+        df = time_series_all_list[stock_index][day_id].copy()
         # some data might miss, we must make a right join with full time series
         # and do fillna.
         df2 = df.set_index('timestamp')
@@ -108,7 +121,7 @@ for stock_id in stock_tuple:
         if day_id == 0: # the first day, we must set the value from 8.55-8.59 as same as 9.00
             df3['last'].iloc[0] = df3['last'].iloc[6]
         else:
-            df3['last'].iloc[0] = time_series_all_list[stock_id][day_id-1]['last'].iloc[-1]
+            df3['last'].iloc[0] = time_series_all_list[stock_index][day_id-1]['last'].iloc[-1]
         
         
         df3['last'].interpolate(method='linear', inplace=True)
@@ -153,7 +166,7 @@ for stock_id in stock_tuple:
             df['value_ema_20_beta_98'] = df['diff_ema_20'].shift(-1).fillna(0) +                 0.98 * df['value_ema_20_beta_98'].shift(-1).fillna(0)
         # drop the first row because diff is nan    
         #df.drop(0, inplace=True)
-        value_result_list[stock_id][day_id] = df.fillna(0)
+        value_result_list[stock_index][day_id] = df.fillna(0)
 
 # In[ ]:
 
@@ -175,19 +188,25 @@ def add_step_columns(df):
 
 npy_save_path = '../../preprocessed-data/'
 #for s_id in range(len(value_result_list)):
-for s_id in stock_tuple:
-    df_merged = value_result_list[s_id][0][column_wanted_in_order]
+for stock_name in stock_name_tuple:
+    stock_id = get_stock_id_by_name(stock_name)
+    stock_index = get_stock_index_by_id(stock_id)
+    df_merged = value_result_list[stock_index][0][column_wanted_in_order]
     df_merged = add_step_columns(df_merged)
-    for day_id in range(1, len(value_result_list[s_id])):
-        df = value_result_list[s_id][day_id][column_wanted_in_order]
+    for day_id in range(1, len(value_result_list[stock_index])):
+        df = value_result_list[stock_index][day_id][column_wanted_in_order]
         df = add_step_columns(df)
         df_merged = df_merged.append(df)
     
     
     for ema in (20,):
         for beta in (99,):
-            print("Saving to files for stock id:{} ema:{} beta:{}".format(s_id, ema, beta))
-            npy_filename = npy_save_path + "ema{}_beta{}_{}.npy".format(ema, beta, s_id)
+            print("Saving to files for stock id:{}, name:{} index:{} ema:{} beta:{}".format(stock_id, 
+                stock_name,
+                stock_index, 
+                ema, 
+                beta))
+            npy_filename = npy_save_path + "{}_{}_ema{}_beta{}.npy".format(stock_name, stock_id, ema, beta, stock_id)
             groups = df_merged.set_index('timestamp').groupby(lambda x: x.date())
             data_list = []
             column_list = ['step_of_day',
