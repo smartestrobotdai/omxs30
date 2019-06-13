@@ -106,14 +106,14 @@ def get_stock_data_dir():
 def get_preprocessed_data_dir():
 	return os.path.join(get_home_dir(), 'preprocessed-data')
 
-def get_swarm_dir(stock_name, stock_index, start_day_index, end_day_index):
+def get_swarm_dir(stock_name, stock_id, start_day_index, end_day_index):
     return os.path.join(get_stock_data_dir(), 
-        "()_()".format(stock_name, stock_index),
-        "()-()".format(start_day_index, end_day_index))
+        "{}_{}".format(stock_name, stock_id),
+        "{}-{}".format(start_day_index, end_day_index))
 
-def load_strategy_input_data(stock_index, start_day_index, end_day_index, ema=20, beta=99):
+def load_strategy_input_data(stock_id, start_day_index, end_day_index, ema=20, beta=99):
 	processed_data_dir = get_preprocessed_data_dir()
-	file = os.path.join(processed_data_dir, "ema()_beta()_().npy".format(ema, beta, stock_index))
+	file = os.path.join(processed_data_dir, "ema()_beta()_().npy".format(ema, beta, stock_id))
 	data = np.load(file, allow_pickle=True)
 	return remove_centralized(data[start_day_index:end_day_index,:,[-2,-3,-1]])
 
