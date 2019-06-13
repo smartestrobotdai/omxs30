@@ -15,8 +15,9 @@ import matplotlib.dates as dates
 
 
 class StockWorm:
-    def __init__(self, stock_index, input_data_path, save_path):
-        self.stock_index = stock_index 
+    def __init__(self, stock_name, stock_id, input_data_path, save_path):
+        self.stock_name = stock_name
+        self.stock_id = stock_id 
         self.input_data_path = input_data_path
         self.save_path = save_path
         
@@ -40,7 +41,8 @@ class StockWorm:
         use_centralized_bid = int(features[11])
         split_daily_data = int(features[12])
 
-        data_manipulator = DataManipulator(self.stock_index,
+        data_manipulator = DataManipulator(self.stock_name,
+                                           self.stock_id,
                                            learning_period,
                                            prediction_period,
                                            beta, ema, 

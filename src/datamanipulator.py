@@ -1,13 +1,15 @@
 import numpy as np
 from sklearn import preprocessing
 from util import remove_centralized, timestamp2date
+import os.path
+
 class TimeFormat:
     NONE = 0
     DAY = 1
     WEEK = 2
 
 class DataManipulator:
-    def __init__(self,  stock_index, n_learning_days,
+    def __init__(self,  stock_name, stock_id, n_learning_days,
                 n_prediction_days, beta, ema, time_format, volume_input, use_centralized_bid, 
                 split_daily_data, input_path):
         self.n_learning_days = n_learning_days
@@ -21,7 +23,8 @@ class DataManipulator:
         self.last_learning_date = None
         self.next_prediction_seq = None
         self.next_learning_seq = None
-        self.stock_index = stock_index
+        self.stock_name = stock_name
+        self.stock_id = stock_id
         if split_daily_data == True:
             self.n_learning_seqs = self.n_learning_days * 2
             self.n_prediction_seqs = self.n_prediction_days * 2
@@ -80,7 +83,7 @@ class DataManipulator:
     
     def init_scalers(self, start_day_index, end_day_index):
         input_path = self.input_path
-        stock_index = self.stock_index
+        stock_id = self.stock_id
         input_data, output_data, timestamp, price = self.purge_data()
         start_seq_index = self.day_index_2_seq_index(start_day_index)
         end_seq_index = self.day_index_2_seq_index(end_day_index)
@@ -96,11 +99,15 @@ class DataManipulator:
         data = data.reshape((shape[0]*shape[1],shape[2]))
         return preprocessing.MinMaxScaler().fit(data)
 
+    def get_data_file_name(self):
+        npy_file_name = os.path.join(self.input_path, "{}_{}_ema{}_beta{}.npy".format(self.stock_name, self.stock_id, self.ema, self.beta))
+        return npy_file_name
+
 
     def get_n_days(self):
         input_path = self.input_path
-        stock_index = self.stock_index
-        npy_file_name = input_path + "/ema{}_beta{}_{}.npy".format(self.ema, self.beta, stock_index)
+        stock_id = self.stock_id
+        npy_file_name = self.get_data_file_name()
         input_np_data = np.load(npy_file_name, allow_pickle=True)
         n_days = input_np_data.shape[0]
         return n_days
@@ -108,9 +115,9 @@ class DataManipulator:
     # to purge data based on parameters like time_input, split_daily_data, etc.
     def purge_data(self):
         input_path = self.input_path
-        stock_index = self.stock_index
+        stock_id = self.stock_id
         # load numpy file
-        npy_file_name = input_path + "/ema{}_beta{}_{}.npy".format(self.ema, self.beta, stock_index)
+        npy_file_name = self.get_data_file_name()
         input_np_data = np.load(npy_file_name, allow_pickle=True)
         n_days = input_np_data.shape[0]
         # the diff is the mandatory
@@ -169,8 +176,8 @@ class DataManipulator:
     
     def date_2_day_index(self, date):
         input_path = self.input_path
-        stock_index = self.stock_index
-        npy_file_name = input_path + "/ema{}_beta{}_{}.npy".format(self.ema, self.beta, stock_index)
+        stock_id = self.stock_id
+        npy_file_name = self.get_data_file_name()
         input_np_data = np.load(npy_file_name, allow_pickle=True)
         timestamps = input_np_data[:,:,5]
         for i in range(len(timestamps)):
@@ -221,4 +228,3 @@ class DataManipulator:
             assert(daily_arr.shape[1]==504)
 
         return daily_arr
-    

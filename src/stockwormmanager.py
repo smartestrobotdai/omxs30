@@ -47,9 +47,15 @@ class StockWormManager:
       {'name': 'split_daily_data', 'type': 'discrete', 'domain': (0,1)}
      ]
 
-    def __init__(self, stock_name, stock_index, stock_data_path, npy_files_path):
+    def __init__(self, stock_name, stock_data_path, npy_files_path):
         self.stock_name = stock_name
-        self.stock_index = stock_index
+
+        self.stock_id = get_stock_id_by_name(stock_name)
+        if self.stock_id == None:
+          print("cannot find stock id with name: {}".format(stock_name))
+          os.exit()
+        
+
         self.stock_data_path = stock_data_path
         self.npy_files_path = npy_files_path
         self.worm_list = []
@@ -84,7 +90,7 @@ class StockWormManager:
           else:
             print("cannot find strategy cache:{}, generating...".format(strategy_cache_file))
 
-          data = load_strategy_input_data(self.stock_index, start_day_index, end_day_index)
+          data = load_strategy_input_data(self.stock_id, start_day_index, end_day_index)
           # the input data: timestamp, value, and price.
           strategy_list = trade_strategy_factory.create_trade_strategies(data, 5)
 
@@ -111,7 +117,7 @@ class StockWormManager:
             print("find from cache. skip...")
         else:
             model_save_path = self.get_model_save_path(start_day, end_day, features)
-            stock_worm = StockWorm(self.stock_index, self.npy_files_path, model_save_path)
+            stock_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, model_save_path)
             total_profit, profit_daily, errors_daily = stock_worm.init(features, 
                 strategy_list, start_day, end_day)
 
@@ -134,7 +140,7 @@ class StockWormManager:
 
     def get_swarm_path(self, start_day_index, end_day_index):
         return os.path.join(self.stock_data_path, 
-            "{}_{}".format(self.stock_name, self.stock_index),
+            "{}_{}".format(self.stock_name, self.stock_id),
             "{}-{}".format(start_day_index, end_day_index))
 
     def get_stockworm_cache_file(self, start_day_index, end_day_index):
@@ -159,7 +165,7 @@ class StockWormManager:
         for i in range(n_number):
           features = top_worms[i, :13]
           model_save_path = self.get_model_save_path(start_day_index, end_day_index, features)
-          new_worm = StockWorm(self.stock_index, self.npy_files_path, model_save_path)
+          new_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, model_save_path)
           if os.path.isdir(model_save_path) and new_worm.load() == True:
               pass
           else:
@@ -197,7 +203,7 @@ class StockWormManager:
       directories = [os.path.join(model_save_path, f) for f in os.listdir(model_save_path) if os.path.isdir(os.path.join(model_save_path, f))]
       self.worm_list = []
       for d in directories:
-        new_worm = StockWorm(self.stock_index, self.npy_files_path, d)
+        new_worm = StockWorm(self.stock_id, self.npy_files_path, d)
         new_worm.load()
         self.worm_list.append(new_worm)
 
