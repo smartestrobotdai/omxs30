@@ -181,6 +181,7 @@ class StockWormManager:
                 n_data_appended))
             new_worm.save()
 
+          new_worm.report()
           self.worm_list.append(new_worm)
 
     def report(self):

@@ -12,7 +12,7 @@ stock_name = sys.argv[1]
 start_day_index = int(sys.argv[2])
 end_day_index = int(sys.argv[3])
 
-if sys.argv == 6:
+if sys.argv == 5:
 	number = int(sys.argv[4])
 else:
 	number = 5
