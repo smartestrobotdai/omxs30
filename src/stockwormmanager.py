@@ -208,56 +208,44 @@ class StockWormManager:
         new_worm.load()
         self.worm_list.append(new_worm)
 
-    def test(self):
-      profit_sma_list = []
-      testing_profit_daily_list = []
-      for i in range(len(self.worm_list)):
-        print("Report for Worm No.{}".format(i+1))
-        worm = self.worm_list[i]
-        training_total_profit, training_daily_profit, \
-            testing_total_profit, testing_daily_profit = worm.get_historic_metrics()
-
-        all_daily_profit = np.concatenate((training_daily_profit[-20:], testing_daily_profit))
-        all_profit_avg = cumsum_avg(all_daily_profit)
-
-
-        profit_sma = worm.get_profit_sma()
-        assert(len(testing_daily_profit)+1 == len(profit_sma))
-
-        profit_sma_list.append(profit_sma)
-        testing_profit_daily_list.append(testing_daily_profit)
-
-      profit_sma_array = np.array(profit_sma_list)
-      test_profit_daily_array = np.array(testing_profit_daily_list)
-      # go through all the days
-      print(profit_sma_array.shape)
-      print(test_profit_daily_array.shape)
-
-      overall_profit_list = []
-      for i in range(len(test_profit_daily_array[0])):
-
-        best_sma_index = np.argmax(profit_sma_array[:,i])
-        print("day:{}, best_sma_index:{}, sma:{}".format(i, best_sma_index, profit_sma_array[:,i]))
-        overall_profit = test_profit_daily_array[best_sma_index, i]
-        overall_profit_list.append(overall_profit)
-
-      overall_profit_daily = np.array(overall_profit_list)
-      total_profit = np.prod(overall_profit_daily+1)-1
-      return total_profit, overall_profit_daily
-
     def get_worm(self, n):
       assert(len(self.worm_list) > n)
       return self.worm_list[n]
 
+    def test(self):
+      profit_avg_list = []
+      profit_list = []
+      for worm in self.worm_list:
+        training_total_profit, \
+                training_daily_profit, testing_total_profit, \
+                testing_daily_profit = worm.get_historic_metrics()
+
+        testing_len = len(testing_daily_profit)
+        traning_len = len(training_daily_profit)
+        all_profit = np.concatenate((training_daily_profit, testing_daily_profit), axis=0)
+        all_profit_cumsum = np.cumsum(all_profit)
+        profit_avg = all_profit_cumsum/(np.arange(len(all_profit_cumsum))+1)
+        profit_avg_list.append(profit_avg[traning_len-1:])
+        profit_list.append(testing_daily_profit)
+
+        assert(len(profit_avg[traning_len-1:]) == len(testing_daily_profit) + 1)
+
+      profit_avg_arr = np.array(profit_avg_list)
+      profit_arr = np.array(profit_list)
+
+      # find the argmax from profit_avg_arr
+      argmax_arr = np.argmax(profit_avg_arr, axis=0)
+      overall_profit = profit_arr[argmax_arr[:-1], np.arange(len(profit_arr[0]))]
+
+      
+      print(argmax_arr[:-1])
+      print(overall_profit)
+      print("OVERALL RESULTS:")
+      print(np.prod(overall_profit+1)-1)
+
     def plot(self):
-      assert(len(self.worm_list)!=0)
-      plt.subplot(2, 1, 1)
-      for i in range(len(self.worm_list)):
-        worm = self.worm_list[i]
-        daily_data = self.get_daily_data()
-        x1 = daily_data[:training_data_length,0]
-        y1 = np.cumprod(daily_data[:training_data_length,1])
-        z1 = np.cumprod(daily_data[:training_data_length,2])
+      
+      pass
 
         
     def get_parameter_str(self, X):
