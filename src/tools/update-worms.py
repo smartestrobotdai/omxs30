@@ -12,7 +12,7 @@ stock_name = sys.argv[1]
 start_day_index = int(sys.argv[2])
 end_day_index = int(sys.argv[3])
 
-if sys.argv == 5:
+if len(sys.argv) == 5:
 	number = int(sys.argv[4])
 else:
 	number = 5
@@ -31,8 +31,7 @@ stock_worm_manager.update_worms_from_cache(n_number=number,
 
 
 stock_worm_manager.report()
-total_profit, profit_daily = stock_worm_manager.test()
-print("Overall Profit: %f" % total_profit)
+
 
 
 
