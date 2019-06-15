@@ -6,14 +6,15 @@ from util import *
 
 
 if len(sys.argv) < 2:
-	print("usage: python3 check-data.py stock_index")
+	print("usage: python3 check-data.py stock_name")
 	sys.exit()
 
 ema=20
 beta=99
-stock_index = int(sys.argv[1])
+stock_name = sys.argv[1]
+stock_id = get_stock_id_by_name(stock_name)
 
-filename = "../../preprocessed-data/ema{}_beta{}_{}.npy".format(ema,beta, stock_index)
+filename = "../../preprocessed-data/{}_{}_ema{}_beta{}.npy".format(stock_name, stock_id, ema, beta)
 data = np.load(filename, allow_pickle=True)
 assert(len(data.shape) == 3)
 n_days = len(data)
