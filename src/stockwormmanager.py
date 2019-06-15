@@ -245,6 +245,10 @@ class StockWormManager:
       total_profit = np.prod(overall_profit_daily+1)-1
       return total_profit, overall_profit_daily
 
+    def get_worm(self, n):
+      assert(len(self.worm_list) > n)
+      return self.worm_list[n]
+
     def plot(self):
       assert(len(self.worm_list)!=0)
       plt.subplot(2, 1, 1)
