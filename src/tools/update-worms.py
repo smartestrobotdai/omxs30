@@ -15,7 +15,7 @@ end_day_index = int(sys.argv[3])
 if len(sys.argv) == 5:
 	number = int(sys.argv[4])
 else:
-	number = 5
+	number = 3
 
 stock_data_dir = get_stock_data_dir()
 preprocessed_data_dir = get_preprocessed_data_dir()
