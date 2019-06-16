@@ -58,7 +58,7 @@ class StockWorm:
         self.data_manipulator = data_manipulator
         self.model = model
 
-        strategy_data_input, errors_daily = self.test_model_base(start_day_index, end_day_index)
+        strategy_data_input, real_values, errors_daily = self.test_model_base(start_day_index, end_day_index)
 
         max_total_profit = -1
         max_profit_daily = None
@@ -74,7 +74,9 @@ class StockWorm:
             best_change_rate = change_rate
 
         self.strategy_model = best_strategy_model
-        self.historic_data = np.concatenate((strategy_data_input, best_change_rate), axis=2)
+        print(strategy_data_input.shape)
+        print(real_values.shape)
+        self.historic_data = np.concatenate((strategy_data_input, best_change_rate, real_values), axis=2)
 
         return max_total_profit, max_profit_daily, errors_daily
     
@@ -101,11 +103,11 @@ class StockWorm:
         # the first end_day_index is NOT inclusive. 
         n_data_appended = 0
         if end_day_index != learning_end_day_index + 1:
-            strategy_data_input, errors_daily = self.test_model_base(start_day_index, end_day_index)
+            strategy_data_input, real_values, errors_daily = self.test_model_base(start_day_index, end_day_index)
             total_profit, profit_daily, change_rate = self.strategy_model.get_profit(strategy_data_input)
 
 
-            historic_data = np.concatenate((strategy_data_input, change_rate), axis=2)
+            historic_data = np.concatenate((strategy_data_input, change_rate, real_values), axis=2)
             assert(self.historic_data is not None)
             n_data_appended = self.append_historic_data(historic_data)
 
@@ -162,15 +164,17 @@ class StockWorm:
         # prepare data for the strategy optimization, including timestamp, value, price.
 
         np_values = data_manipulator.inverse_transform_output(np_values)
+        np_real_values = data_manipulator.inverse_transform_output(data_output)
         n_learning_seqs = data_manipulator.get_learning_seqs()
 
         length = len(np_values)
         strategy_data_input = np.stack((timestamps[-length:], 
-                                        np_values, 
+                                        np_values,
                                         price[-length:]), axis=2)
-
+        np_real_values = np_real_values[-length:]
         strategy_data_input = data_manipulator.seq_data_2_daily_data(strategy_data_input, is_remove_centralized=True)
-        return strategy_data_input, errors_daily
+        np_real_values = data_manipulator.seq_data_2_daily_data(np_real_values, is_remove_centralized=True)
+        return strategy_data_input, np_real_values, errors_daily
 
     # run the model, do learning and prediction at same time, 
     # this will be used for both training and testing.
@@ -354,35 +358,58 @@ class StockWorm:
         print("preparing plotting")
         print(daily_data.shape)
         x1 = daily_data[:training_data_length,0]
-        y1 = np.cumprod(daily_data[:training_data_length,1]+1)
-        z1 = np.cumprod(daily_data[:training_data_length,2]+1)
+
+        stock_training = np.cumprod(daily_data[:training_data_length,1]+1)
+        asset_training = np.cumprod(daily_data[:training_data_length,2]+1)
 
         plt.subplot(2, 1, 1)
-        plt.plot(x1,y1)
-        plt.plot(x1,z1)
+        plt.plot(x1,stock_training)
+        plt.legend("stock")
+        plt.plot(x1,asset_training)
+        plt.legend("asset")
         plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%m-%d'))
         #plt.gca().xaxis.set_major_locator(dates.DateLocator())
         
         plt.gcf().autofmt_xdate()
         x2 = daily_data[training_data_length:, 0]
-        y2 = np.cumprod(daily_data[training_data_length:, 1]+1)
-        z2 = np.cumprod(daily_data[training_data_length:, 2]+1)
+        stock_testing = np.cumprod(daily_data[training_data_length:, 1]+1)
+        asset_testing = np.cumprod(daily_data[training_data_length:, 2]+1)
         plt.subplot(2, 1, 2)
-        plt.plot(x2,y2)
-        plt.plot(x2,z2)
+        plt.plot(x2,stock_testing, label='stock_testing')
+        plt.legend("stock")
+        plt.plot(x2,asset_testing, label='asset_testing')
+        plt.legend("asset")
         plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%m-%d'))
         #plt.gca().xaxis.set_major_locator(dates.DateLocator())
         plt.gcf().autofmt_xdate()
         plt.show()
 
     def plot_day_index(self, day_index):
-        y1 = np.cumprod(self.historic_data[day_index,:,3]+1)
-        z1 = np.cumprod(self.historic_data[day_index,:,4]+1)
+        # the stock price change rate
+        stock = np.cumprod(self.historic_data[day_index,:,3]+1)
+        # the asset change rate
+        asset = np.cumprod(self.historic_data[day_index,:,4]+1)
+        # timestamp
         x1 = self.historic_data[day_index, :, 0]
-
-        plt.plot(x1,y1)
-        plt.plot(x1,z1)
+        plt.subplot(2, 1, 1)
+        plt.plot(x1,stock,label='stock')
+        plt.legend()
+        plt.plot(x1,asset,label='asset')
+        plt.legend()
         plt.gcf().autofmt_xdate()
+
+        # the real values
+        real_values = self.historic_data[day_index,:,5]
+        # the predicted values
+        predicted_values = self.historic_data[day_index,:,1]
+        x2 = self.historic_data[day_index,:,0]
+        plt.subplot(2, 1, 2)
+        plt.plot(x2,real_values,label='real')
+        plt.legend()
+        plt.plot(x2,predicted_values, label='predicted')
+        plt.legend()
+        plt.gcf().autofmt_xdate()
+
         plt.show()
 
     def plot_date(self, date):
@@ -396,24 +423,24 @@ if __name__ == '__main__':
 
     npy_path = get_preprocessed_data_dir()
     stock_data_path = get_stock_data_dir()
-    strategy_cache_file = os.path.join(stock_data_path, "Nordea_5", "0-60", "strategy_cache.txt")
+    strategy_cache_file = os.path.join(stock_data_path, "HM-B_992", "0-80", "strategy_cache.txt")
     from tradestrategy import TradeStrategyFactory
     trade_strategy_factory = TradeStrategyFactory()
 
     strategy_list = trade_strategy_factory.create_from_file(strategy_cache_file, 10)
-    stock_worm = StockWorm(5, npy_path, 'my_model')
+    stock_worm = StockWorm('HM-B', 992, npy_path, 'my_model')
 
     features=[60.0 , 0.004 , 1.0 , 0.0 , 40.0 , 20.0 ,  1.0 , 99.0,  20.0 , 1.0,  1.0 , 1.0,  1.0]
-    total_profit, profit_daily, errors_daily = stock_worm.init(features, strategy_list, 0, 60)
+    total_profit, profit_daily, errors_daily = stock_worm.init(features, strategy_list, 0, 80)
     print("Training finished: total_profit:{}".format(total_profit))
     print("prod of profit_daily:{}".format(np.prod(np.array(profit_daily)+1)-1))
     stock_worm.save()
 
-    total_profit_test, profit_daily_test, n_data_appended = stock_worm.test("190528")
+    total_profit_test, profit_daily_test, n_data_appended = stock_worm.test()
     print("Testing finished: total_profit:{}, data for {} days appended".format(total_profit_test, n_data_appended))
     stock_worm.save()
 
-    stock_worm2 = StockWorm(5, npy_path, 'my_model')
+    stock_worm2 = StockWorm('HM-B', 992, npy_path, 'my_model')
     stock_worm2.load()
     #stock_worm2.plot()
 
