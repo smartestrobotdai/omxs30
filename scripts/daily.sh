@@ -50,18 +50,27 @@ gzip dbbackup/dump_$SUFFIX.sql
 cp -f dbbackup/dump_$SUFFIX.sql.gz dbbackup/dump.sql.gz
 DATE=`date "+%y%m%d"`
 
-FILE_ID=`gdrive list | grep "dump.sql.gz" | awk '{print $1}'`
+if [ $UPLOAD_TO_GDRIVE -eq 1 ]; then
+	echo "uploading dump.sql.gz"
+	FILE_ID=`gdrive list | grep "dump.sql.gz" | awk '{print $1}'`
+	gdrive update ${FILE_ID} dbbackup/dump.sql.gz
+fi
 
-gdrive update ${FILE_ID} dbbackup/dump.sql.gz
+
+
+
 PGPASSWORD=dai psql -h 0.0.0.0 -U postgres -f export_data.sql
 docker cp postgres-omxs:/tmp/data.csv ./data
 rm -rf data/data.csv.gz
 gzip data/data.csv
 
-FILE_ID=`gdrive list | grep "data.csv.gz" | awk '{print $1}'`
+if [ $UPLOAD_TO_GDRIVE -eq 1 ]; then
+	echo "uploading data.csv.gz"
+	FILE_ID=`gdrive list | grep "data.csv.gz" | awk '{print $1}'`
+	gdrive update ${FILE_ID} data/data.csv.gz
+fi
 
-gdrive update ${FILE_ID} data/data.csv.gz
-echo "`date` daily task finished"
+
 
 docker-compose down
 sleep 5
@@ -71,6 +80,11 @@ cd src/tools
 cd ${OMXS30_HOME}
 
 tar -czvf preprocessed-data/preprocessed-data.tar.gz ./preprocessed-data/*.npy
-FILE_ID=`gdrive list | grep "preprocessed-data.tar.gz" | awk '{print $1}'`
-gdrive update ${FILE_ID} preprocessed-data/preprocessed-data.tar.gz
+
+if [ $UPLOAD_TO_GDRIVE -eq 1 ]; then
+	FILE_ID=`gdrive list | grep "preprocessed-data.tar.gz" | awk '{print $1}'`
+	gdrive update ${FILE_ID} preprocessed-data/preprocessed-data.tar.gz
+fi
+
 cd ${ORI_DIR}
+echo "`date` daily task finished"
