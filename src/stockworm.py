@@ -390,26 +390,43 @@ class StockWorm:
         # the asset change rate
         asset = np.cumprod(self.historic_data[day_index,:,4]+1)
         # timestamp
-        x1 = self.historic_data[day_index, :, 0]
-        plt.subplot(2, 1, 1)
-        plt.plot(x1,stock,label='stock')
-        plt.legend()
-        plt.plot(x1,asset,label='asset')
-        plt.legend()
+        x = self.historic_data[day_index, :, 0]
+        plt.subplot(3, 1, 1)
+        plt.plot(x,stock,label='stock')
+        #plt.legend()
+        plt.plot(x,asset,label='asset')
+        #plt.legend()
         plt.gcf().autofmt_xdate()
+        plt.grid()
+
+
+        # get the thresholds, 
+        strategy_features = self.strategy_model.get_features()
+        buy_threshold = np.array([strategy_features[0]] * len(x))
+        sell_threshold = np.array([strategy_features[1]] * len(x))
 
         # the real values
         real_values = self.historic_data[day_index,:,5]
         # the predicted values
-        predicted_values = self.historic_data[day_index,:,1]
-        x2 = self.historic_data[day_index,:,0]
-        plt.subplot(2, 1, 2)
-        plt.plot(x2,real_values,label='real')
-        plt.legend()
-        plt.plot(x2,predicted_values, label='predicted')
-        plt.legend()
-        plt.gcf().autofmt_xdate()
 
+
+
+        plt.subplot(3, 1, 2)
+        plt.plot(x, real_values,label='real')
+        plt.plot(x, buy_threshold, label='buy')
+        plt.plot(x, sell_threshold, label='sell')
+        #plt.legend()
+        plt.gcf().autofmt_xdate()
+        plt.grid()
+
+        predicted_values = self.historic_data[day_index,:,1]
+        plt.subplot(3, 1, 3)
+        plt.plot(x, predicted_values, label='predicted')
+        plt.plot(x, buy_threshold, label='buy')
+        plt.plot(x, sell_threshold, label='sell')
+        #plt.legend()
+        plt.gcf().autofmt_xdate()
+        plt.grid()
         plt.show()
 
     def plot_date(self, date):
@@ -417,6 +434,17 @@ class StockWorm:
         print("Plotting date:{} day index: {}".format(date, day_index))
         assert(day_index is not None)
         self.plot_day_index(day_index)
+
+    def get_values_by_date(self, date):
+        day_index = self.data_manipulator.get_historic_day_index(date)
+        assert(day_index is not None)
+        return self.get_values_by_index(day_index)
+
+    def get_values_by_index(self, day_index):
+        real_values = self.historic_data[day_index,:,5]
+        # the predicted values
+        predicted_values = self.historic_data[day_index,:,1]
+        return real_values, predicted_values
 
 
 if __name__ == '__main__':
