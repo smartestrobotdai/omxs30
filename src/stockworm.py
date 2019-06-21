@@ -12,6 +12,8 @@ import datetime
 from datetime import timedelta  
 import matplotlib.dates as dates
 
+from ipywidgets import interact
+import ipywidgets as widgets
 
 
 class StockWorm:
@@ -348,6 +350,7 @@ class StockWorm:
         overall_profit = np.concatenate((training_daily_profit, testing_daily_profit), axis=0)
         print("Overall Avg Profit: %f" % mean(overall_profit))
         print("Overall Profit Std: %f" % stdev(overall_profit))
+
     def get_training_data_len(self):
         return self.data_manipulator.get_training_data_len()
 
@@ -367,10 +370,12 @@ class StockWorm:
         plt.legend("stock")
         plt.plot(x1,asset_training)
         plt.legend("asset")
+
         plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%m-%d'))
         #plt.gca().xaxis.set_major_locator(dates.DateLocator())
         
         plt.gcf().autofmt_xdate()
+        plt.grid()
         x2 = daily_data[training_data_length:, 0]
         stock_testing = np.cumprod(daily_data[training_data_length:, 1]+1)
         asset_testing = np.cumprod(daily_data[training_data_length:, 2]+1)
@@ -382,15 +387,21 @@ class StockWorm:
         plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%m-%d'))
         #plt.gca().xaxis.set_major_locator(dates.DateLocator())
         plt.gcf().autofmt_xdate()
+        plt.grid()
         plt.show()
 
     def plot_day_index(self, day_index):
+
         # the stock price change rate
         stock = np.cumprod(self.historic_data[day_index,:,3]+1)
         # the asset change rate
         asset = np.cumprod(self.historic_data[day_index,:,4]+1)
+        # the date
+        date = timestamp2date(self.historic_data[day_index, 0, 0])
+        print("Date: {}".format(date))
         # timestamp
         x = self.historic_data[day_index, :, 0]
+
         plt.subplot(3, 1, 1)
         plt.plot(x,stock,label='stock')
         #plt.legend()
@@ -428,6 +439,10 @@ class StockWorm:
         plt.gcf().autofmt_xdate()
         plt.grid()
         plt.show()
+
+    def plot_days(self):
+        data_len = self.historic_data.shape[0]
+        interact(self.plot_day_index, day_index=widgets.IntSlider(min=0, max=data_len-1, value=data_len-1))
 
     def plot_date(self, date):
         day_index = self.data_manipulator.get_historic_day_index(date)
@@ -471,6 +486,4 @@ if __name__ == '__main__':
     stock_worm2 = StockWorm('HM-B', 992, npy_path, 'my_model')
     stock_worm2.load()
     #stock_worm2.plot()
-
-
     stock_worm2.report()
