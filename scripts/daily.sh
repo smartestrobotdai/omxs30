@@ -50,7 +50,7 @@ gzip dbbackup/dump_$SUFFIX.sql
 cp -f dbbackup/dump_$SUFFIX.sql.gz dbbackup/dump.sql.gz
 DATE=`date "+%y%m%d"`
 
-if [ $UPLOAD_TO_GDRIVE -eq 1 ]; then
+if [ $UPLOAD_TO_GDRIVE == "1" ]; then
 	echo "uploading dump.sql.gz"
 	FILE_ID=`gdrive list | grep "dump.sql.gz" | awk '{print $1}'`
 	gdrive update ${FILE_ID} dbbackup/dump.sql.gz
@@ -64,7 +64,7 @@ docker cp postgres-omxs:/tmp/data.csv ./data
 rm -rf data/data.csv.gz
 gzip data/data.csv
 
-if [ $UPLOAD_TO_GDRIVE -eq 1 ]; then
+if [ $UPLOAD_TO_GDRIVE == "1" ]; then
 	echo "uploading data.csv.gz"
 	FILE_ID=`gdrive list | grep "data.csv.gz" | awk '{print $1}'`
 	gdrive update ${FILE_ID} data/data.csv.gz
@@ -81,7 +81,7 @@ cd ${OMXS30_HOME}
 
 tar -czvf preprocessed-data/preprocessed-data.tar.gz ./preprocessed-data/*.npy
 
-if [ $UPLOAD_TO_GDRIVE -eq 1 ]; then
+if [ $UPLOAD_TO_GDRIVE == "1" ]; then
 	FILE_ID=`gdrive list | grep "preprocessed-data.tar.gz" | awk '{print $1}'`
 	gdrive update ${FILE_ID} preprocessed-data/preprocessed-data.tar.gz
 fi
