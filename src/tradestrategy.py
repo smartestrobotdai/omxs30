@@ -130,6 +130,8 @@ class TradeStrategy:
     def to_list(self):
         return [self.buy_threshold, self.sell_threshold, self.stop_loss, self.stop_gain]
 
+    def get_features(self):
+        return (self.buy_threshold, self.sell_threshold, self.stop_loss, self.stop_gain)
 
     def get_profit(self,  input_data, verbose=False):
         X_list = self.to_list()
