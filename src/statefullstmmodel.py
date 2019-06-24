@@ -45,6 +45,7 @@ class StatefulLstmModel:
         self.net_states = NetStates()
         self.model_initialized = False
         self.sess = None
+        self.volatile_prediction_states = None
     
     def is_initialized(self):
         return self.model_initialized
@@ -162,6 +163,7 @@ class StatefulLstmModel:
         
         self.net_states.training_states = training_states
         self.net_states.prediction_states = rnn_states
+        self.volatile_prediction_states = rnn_states
         self.sess = sess
         return
     
@@ -196,9 +198,14 @@ class StatefulLstmModel:
                                                                  self.outputs, self.loss], feed_dict=feed_dict)
                 print("Predicting seq:{} testing MSE: {}".format(seq, my_loss_test))
             outputs_all_days[seq] = my_outputs
-            
         
+        # the volatile prediction states is the states till yesterday, preparing for real time prediction.
+        self.volatile_prediction_states = rnn_states
         return outputs_all_days
+
+    def predict_realtime(self, data_test_input):
+        assert(self.volatile_prediction_states != None)
+        pass
     
     def predict(self, data_test_input):
         return self.predict_base(data_test_input)

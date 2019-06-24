@@ -27,6 +27,7 @@ class StockWorm:
         self.last_learning_day_index = None
         self.learning_end_date = None
         self.historic_data = None
+        self.data_today = []
 
     def init(self, features, strategy_model_list, start_day_index, end_day_index):
         n_neurons = int(features[0])
@@ -116,6 +117,17 @@ class StockWorm:
         
         _,_,testing_total_profit, testing_profit_list = self.get_historic_metrics()
         return  testing_total_profit, testing_profit_list, n_data_appended
+
+    def prepare_realtime_prediction(self):
+        return self.data_manipulator.prepare_realtime_prediction()
+
+    # this method need to be called every minute.
+    def test_realtime(self, timestamp, price, volume):
+        self.data_today.append([timestamp, price, volume])
+        pass
+
+    def stop_realtime_predcition(self):
+        pass
 
 
     def append_historic_data(self, historic_data):
@@ -487,3 +499,5 @@ if __name__ == '__main__':
     stock_worm2.load()
     #stock_worm2.plot()
     stock_worm2.report()
+    last_price = stock_worm2.prepare_realtime_prediction()
+    print(last_price)

@@ -173,6 +173,22 @@ class DataManipulator:
         timestamp = timestamp[start:end]
         price = price[start:end]
         return data_input, data_output, timestamp, price
+
+    # load yesterday close price.
+    def prepare_realtime_prediction(self, prediction_date=None):
+        npy_file_name = self.get_data_file_name()
+        input_np_data = np.load(npy_file_name, allow_pickle=True)
+        
+        if prediction_date != None:
+            day_index = date_2_day_index(prediction_date)
+            assert(day_index != None and day_index > 0)
+            price = input_np_data[day_index-1, -1, 6]
+        else:
+            price = input_np_data[-1,-1,6]
+
+        self.last_day_price = price
+        return price
+
     
     def date_2_day_index(self, date):
         input_path = self.input_path
