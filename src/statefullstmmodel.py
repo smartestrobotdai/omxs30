@@ -175,7 +175,6 @@ class StatefulLstmModel:
         rnn_states = copy.deepcopy(net_states.prediction_states)
         #X, y, init_state, init, training_op, new_states, loss, outputs = self.create_model()
         sess = self.sess
-        
         my_loss_test_list = []
         input_shape = data_test_input.shape
         outputs_all_days = np.zeros((input_shape[0], input_shape[1], 1))
@@ -205,7 +204,16 @@ class StatefulLstmModel:
 
     def predict_realtime(self, data_test_input):
         assert(self.volatile_prediction_states != None)
-        pass
+        assert(data_test_input.shape[0] == 1)
+
+        rnn_states = copy.deepcopy(net_states.volatile_prediction_states)
+        feed_dict = {
+            self.X: data_test_input,
+            self.init_state: rnn_states,
+        }
+
+        rnn_states, my_outputs = sess.run([self.new_states, self.outputs], feed_dict=feed_dict)
+        return my_outputs
     
     def predict(self, data_test_input):
         return self.predict_base(data_test_input)

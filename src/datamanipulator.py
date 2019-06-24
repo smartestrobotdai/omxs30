@@ -158,6 +158,7 @@ class DataManipulator:
         price = self.daily_data_2_seq_data(price)
         
         return input_data, output_data, timestamp, price
+
     
     def prep_data(self, start_day_index, end_day_index):
         assert(self.initialized)
@@ -174,25 +175,29 @@ class DataManipulator:
         price = price[start:end]
         return data_input, data_output, timestamp, price
 
-    # load yesterday close price.
-    def prepare_realtime_prediction(self, prediction_date=None):
+    # end date is the last day of the real time prediction day
+    def get_last_price(self, end_date=None):
         npy_file_name = self.get_data_file_name()
         input_np_data = np.load(npy_file_name, allow_pickle=True)
-        
-        if prediction_date != None:
-            day_index = date_2_day_index(prediction_date)
+        if end_date != None:
+            day_index = self.date_2_day_index(end_date)
             assert(day_index != None and day_index > 0)
-            price = input_np_data[day_index-1, -1, 6]
+            price = input_np_data[day_index, -1, 6]
         else:
             price = input_np_data[-1,-1,6]
 
-        self.last_day_price = price
         return price
+
+    # input: array : [timestamp, price, volume]
+    def get_realtime_input_data(self, realtime_raw_data):
+        # make sure that prepare realtime prediction is called
+        assert(self.last_day_price != None)
+        
+
+
 
     
     def date_2_day_index(self, date):
-        input_path = self.input_path
-        stock_id = self.stock_id
         npy_file_name = self.get_data_file_name()
         input_np_data = np.load(npy_file_name, allow_pickle=True)
         timestamps = input_np_data[:,:,5]
@@ -200,6 +205,11 @@ class DataManipulator:
             if timestamp2date(timestamps[i][0]) == date:
                 return i
         return None
+
+    def day_index_2_date(self, day_index):
+        npy_file_name = self.get_data_file_name()
+        input_np_data = np.load(npy_file_name, allow_pickle=True)
+        return timestamp2date(input_np_data[day_index, 0, 5])
 
 
     def get_historic_day_index(self, date):

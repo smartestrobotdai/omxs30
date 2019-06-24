@@ -118,15 +118,46 @@ class StockWorm:
         _,_,testing_total_profit, testing_profit_list = self.get_historic_metrics()
         return  testing_total_profit, testing_profit_list, n_data_appended
 
-    def prepare_realtime_prediction(self):
-        return self.data_manipulator.prepare_realtime_prediction()
+    def start_realtime_prediction(self, end_date):
+        # do predction until yesterday's close time and change model states.
+        self.test(end_date)
+        self.last_price = self.data_manipulator.get_last_price(end_date)
 
     # this method need to be called every minute.
     def test_realtime(self, timestamp, price, volume):
+        assert(self.last_price != None)
         self.data_today.append([timestamp, price, volume])
-        pass
+        df = pd.DataFrame(self.data_today,columns=['timestamp', 'last', 'volume'])
+        df = preprocessing_daily_data(df, last_close=self.last_price, calculate_values=False)
+        df = add_step_columns(df)
 
-    def stop_realtime_predcition(self):
+        print(df[['timestamp','last','volume']])
+        return df
+        
+    def func_test_test_realtime(self, date=None):
+        if date == None:
+            date = get_current_date()
+
+        df = pd.read_csv('../data/data.csv.gz', compression='gzip', sep=',')
+        df = df[df['stock_id'] == self.stock_id]
+        df['timestamp'] = pd.to_datetime(df['time_stamp'], format="%Y-%m-%d %H:%M:%S").dt.tz_convert('CET')
+        df['date'] = df['timestamp'].apply(timestamp2date)
+        df = df[df['date'] == date]
+
+        # find the last date 
+        day_index = self.data_manipulator.date_2_day_index(date)
+        last_date = self.data_manipulator.day_index_2_date(day_index - 1)
+
+        print("Starting realtime test, today: {}, last_trade_day:{}".format(date, last_date))
+
+        # the data format: daily step, weekly step, diff, volume, value, timestamp, price.
+        self.start_realtime_prediction(last_date)
+
+        for i in range(5):
+            self.test_realtime(df.iloc[i]['timestamp'], df.iloc[i]['last'], df.iloc[i]['volume'])
+        self.end_realtime_prediction()
+
+    def end_realtime_predcition(self):
         pass
 
 
@@ -495,9 +526,9 @@ if __name__ == '__main__':
     print("Testing finished: total_profit:{}, data for {} days appended".format(total_profit_test, n_data_appended))
     stock_worm.save()
 
+    print("Testing loading model:")
     stock_worm2 = StockWorm('HM-B', 992, npy_path, 'my_model')
     stock_worm2.load()
     #stock_worm2.plot()
     stock_worm2.report()
-    last_price = stock_worm2.prepare_realtime_prediction()
-    print(last_price)
+    stock_worm2.func_test_test_realtime('190620')
