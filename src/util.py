@@ -138,7 +138,7 @@ def create_if_not_exist(path):
 def preprocessing_daily_data(df, last_close=None, calculate_values=True):
 	# some data might miss, we must make a right join with full time series
 	# and do fillna.
-	print("starting preprocessing_daily_data")
+
 	df2 = df.set_index('timestamp')
 	ts = df2.index.min()
 	start_time_str = "{}-{:02d}-{:02d} 8:54:00".format(ts.year, ts.month, ts.day)
@@ -164,7 +164,6 @@ def preprocessing_daily_data(df, last_close=None, calculate_values=True):
 
 	df = df3.reset_index().rename({'index':'timestamp'}, axis=1)
 
-	print("starting preprocessing_daily_data 1")
 	#df['timestamp'] = pd.to_datetime(df['time_stamp'], format="%Y-%m-%d %H:%M:%S").dt.tz_convert('Europe/Stockholm')
 	df['ema_1'] = df['last']
 	df['ema_5'] = df['last'].ewm(span=5, adjust=False).mean()
