@@ -130,11 +130,16 @@ class StockWorm:
         df = pd.DataFrame(self.data_today,columns=['timestamp', 'last', 'volume'])
         df = preprocessing_daily_data(df, last_close=self.last_price, calculate_values=False)
         df = add_step_columns(df)
+        df['value'] = 0
+        df_input = df[['step_of_day', 'step_of_week', 'diff_ema_20', 'volume', 'value', 'timestamp', 'last']]
+        input_data, timestamp, price = self.data_manipulator.purge_data_realtime(df_input)
+        outputs = self.model.predict_realtime(input_data)
+        outputs_scaled = self.data_manipulator.inverse_transform_output(outputs)
 
-        print(df[['timestamp','last','volume']])
-        return df
+        output_scaled_daily = self.data_manipulator.seq_data_2_daily_data(outputs_scaled)
+        return output_scaled_daily
         
-    def func_test_test_realtime(self, date=None):
+    def func_test_test_realtime(self, date=None, n_steps=5):
         if date == None:
             date = get_current_date()
 
@@ -153,12 +158,11 @@ class StockWorm:
         # the data format: daily step, weekly step, diff, volume, value, timestamp, price.
         self.start_realtime_prediction(last_date)
 
-        for i in range(5):
-            self.test_realtime(df.iloc[i]['timestamp'], df.iloc[i]['last'], df.iloc[i]['volume'])
-        self.end_realtime_prediction()
 
-    def end_realtime_predcition(self):
-        pass
+        for i in range(n_steps):
+            output_scaled_daily = self.test_realtime(df.iloc[i]['timestamp'], df.iloc[i]['last'], df.iloc[i]['volume'])
+
+        return output_scaled_daily
 
 
     def append_historic_data(self, historic_data):
@@ -433,6 +437,9 @@ class StockWorm:
         plt.grid()
         plt.show()
 
+    def get_historic_data(self):
+        return self.historic_data
+
     def plot_day_index(self, day_index):
 
         # the stock price change rate
@@ -506,6 +513,11 @@ class StockWorm:
 
 
 if __name__ == '__main__':
+    import shutil
+
+    model_save_path = 'my_model'
+    shutil.rmtree(model_save_path)
+
 
     npy_path = get_preprocessed_data_dir()
     stock_data_path = get_stock_data_dir()
@@ -522,13 +534,33 @@ if __name__ == '__main__':
     print("prod of profit_daily:{}".format(np.prod(np.array(profit_daily)+1)-1))
     stock_worm.save()
 
-    total_profit_test, profit_daily_test, n_data_appended = stock_worm.test()
+    total_profit_test, profit_daily_test, n_data_appended = stock_worm.test('190619')
     print("Testing finished: total_profit:{}, data for {} days appended".format(total_profit_test, n_data_appended))
     stock_worm.save()
 
-    print("Testing loading model:")
+    print("Testing Realtime function:")
     stock_worm2 = StockWorm('HM-B', 992, npy_path, 'my_model')
     stock_worm2.load()
     #stock_worm2.plot()
     stock_worm2.report()
-    stock_worm2.func_test_test_realtime('190620')
+    n_steps = 20
+    outputs_realtime = stock_worm2.func_test_test_realtime('190620', n_steps=n_steps)
+    print("predicted values - realtime")
+    print(outputs_realtime[:, 7:n_steps])
+
+
+    print("Testing non-realtime function")
+    stock_worm3 = StockWorm('HM-B', 992, npy_path, 'my_model')
+    stock_worm3.load()
+    stock_worm3.test('190620')
+    historic_data = stock_worm3.get_historic_data()
+    outputs_non_realtime = historic_data[-1, :n_steps, 1]
+    # print the predicted values.
+    print("predicted values - non realtime")
+    print(outputs_non_realtime[:n_steps])
+
+
+
+
+
+

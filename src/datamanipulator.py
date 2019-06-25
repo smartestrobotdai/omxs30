@@ -112,13 +112,7 @@ class DataManipulator:
         n_days = input_np_data.shape[0]
         return n_days
 
-    # to purge data based on parameters like time_input, split_daily_data, etc.
-    def purge_data(self):
-        input_path = self.input_path
-        stock_id = self.stock_id
-        # load numpy file
-        npy_file_name = self.get_data_file_name()
-        input_np_data = np.load(npy_file_name, allow_pickle=True)
+    def purge_data_helper(self, input_np_data):
         n_days = input_np_data.shape[0]
         # the diff is the mandatory
         input_columns = [2]
@@ -158,6 +152,26 @@ class DataManipulator:
         price = self.daily_data_2_seq_data(price)
         
         return input_data, output_data, timestamp, price
+
+    # to purge data based on parameters like time_input, split_daily_data, etc.
+    def purge_data(self):
+        input_path = self.input_path
+        stock_id = self.stock_id
+        # load numpy file
+        npy_file_name = self.get_data_file_name()
+        input_np_data = np.load(npy_file_name, allow_pickle=True)
+        return self.purge_data_helper(input_np_data)
+
+    def purge_data_realtime(self, dataframe):
+        input_np_data = dataframe.to_numpy()
+        shape = input_np_data.shape
+        assert(shape[0] == 516)
+        assert(shape[1] == 7)
+        input_np_data = input_np_data.reshape((1, shape[0], shape[1]))
+        input_data, _, timestamp, price = self.purge_data_helper(input_np_data)
+        scaled_input_data = self.transform_input(input_data)
+        return scaled_input_data, timestamp, price
+
 
     
     def prep_data(self, start_day_index, end_day_index):

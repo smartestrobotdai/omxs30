@@ -170,15 +170,15 @@ class StatefulLstmModel:
     def predict_base(self, data_test_input, data_test_output=None):
         net_attributes = self.net_attributes
         net_states = self.net_states
-        days = data_test_input.shape[0]
+        seqs = data_test_input.shape[0]
         
         rnn_states = copy.deepcopy(net_states.prediction_states)
         #X, y, init_state, init, training_op, new_states, loss, outputs = self.create_model()
         sess = self.sess
         my_loss_test_list = []
         input_shape = data_test_input.shape
-        outputs_all_days = np.zeros((input_shape[0], input_shape[1], 1))
-        for seq in range(days):
+        outputs_all_seqs = np.zeros((input_shape[0], input_shape[1], 1))
+        for seq in range(seqs):
             if data_test_output is None:
                 feed_dict = {
                     self.X: data_test_input[seq:seq+1],
@@ -196,24 +196,29 @@ class StatefulLstmModel:
                 rnn_states, my_outputs, my_loss_test = sess.run([self.new_states, 
                                                                  self.outputs, self.loss], feed_dict=feed_dict)
                 print("Predicting seq:{} testing MSE: {}".format(seq, my_loss_test))
-            outputs_all_days[seq] = my_outputs
+            outputs_all_seqs[seq] = my_outputs
         
         # the volatile prediction states is the states till yesterday, preparing for real time prediction.
         self.volatile_prediction_states = rnn_states
-        return outputs_all_days
+        return outputs_all_seqs
 
     def predict_realtime(self, data_test_input):
         assert(self.volatile_prediction_states != None)
-        assert(data_test_input.shape[0] == 1)
+        assert(data_test_input.shape[0] <= 2)
+        sess = self.sess
+        rnn_states = copy.deepcopy(self.volatile_prediction_states)
+        shape = data_test_input.shape
+        outputs_all_seqs = np.zeros((shape[0], shape[1], 1))
+        for seq in range(shape[0]):
+            feed_dict = {
+                self.X: data_test_input[seq:seq+1],
+                self.init_state: rnn_states,
+            }
 
-        rnn_states = copy.deepcopy(net_states.volatile_prediction_states)
-        feed_dict = {
-            self.X: data_test_input,
-            self.init_state: rnn_states,
-        }
+            rnn_states, my_outputs = sess.run([self.new_states, self.outputs], feed_dict=feed_dict)
+            outputs_all_seqs[seq] = my_outputs
 
-        rnn_states, my_outputs = sess.run([self.new_states, self.outputs], feed_dict=feed_dict)
-        return my_outputs
+        return outputs_all_seqs
     
     def predict(self, data_test_input):
         return self.predict_base(data_test_input)
