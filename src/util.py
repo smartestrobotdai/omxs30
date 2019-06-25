@@ -120,7 +120,8 @@ def get_swarm_dir(stock_name, stock_id, start_day_index, end_day_index):
 
 def load_strategy_input_data(stock_id, start_day_index, end_day_index, ema=20, beta=99):
 	processed_data_dir = get_preprocessed_data_dir()
-	file = os.path.join(processed_data_dir, "ema()_beta()_().npy".format(ema, beta, stock_id))
+	stock_name = get_stock_name_by_id(stock_id)
+	file = os.path.join(processed_data_dir, "{}_{}_ema{}_beta{}.npy".format(stock_name, stock_id, ema, beta))
 	data = np.load(file, allow_pickle=True)
 	return remove_centralized(data[start_day_index:end_day_index,:,[-2,-3,-1]])
 
