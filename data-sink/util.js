@@ -80,10 +80,15 @@ function calEMA(oldVal, newVal, days) {
   return (newVal - oldVal) * multiplier + oldVal
 }
 
-exports.isWorkingDay = () => {
-  let now = new Date()
-  let day = now.getDay()
-  return day !== 5 && day !== 6
+exports.isWorkingDay = (ts) => {
+  if (ts === null) {
+    d = new Date()
+  } else {
+    d = new Date(ts)
+  }
+
+  let day = d.getDay()
+  return day !== 6 && day !== 0
 }
 
 exports.fetch = fetch

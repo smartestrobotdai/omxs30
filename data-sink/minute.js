@@ -40,6 +40,11 @@ async function fetchMinData(stockId, timestamp) {
   let results = []
   for (let d=timestamp; d <= tsNow; d += 3600*24*1000) {
     let dateString =  getDateString(new Date(d))
+    if (!isWorkingDay(new Date(d))) {
+      console.log(`${dateString} is weekend, ignore`)
+      continue
+    }
+    
     let url = getDataUrl(stockId, dateString, dateString)
     newResults = await fetch(url)
     if (newResults && newResults.length) {
