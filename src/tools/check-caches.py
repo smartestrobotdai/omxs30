@@ -5,7 +5,7 @@ from optimizeresult import OptimizeResult
 from util import *
 
 
-if len(sys.argv) < 5:
+if len(sys.argv) < 4:
 	print("usage: python3 search-worms.py stock_name, traning_start_day_index, training_end_day_index number")
 	sys.exit()
 
