@@ -136,7 +136,7 @@ class StatefulLstmModel:
 
         self.init.run(session=sess)
         # if this is the first time of fit?
-        if self.net_states.training_states == None or self.net_attributes.is_stateful:
+        if self.net_states.training_states == None or self.net_attributes.is_stateful == 0:
             init_states = np.zeros((net_attributes.num_layers, 2, 1, net_attributes.n_neurons))
         else:
             init_states = self.net_states.training_states

@@ -58,7 +58,7 @@ class StockWorm:
 
         data_manipulator.init_scalers(start_day_index, end_day_index)
 
-        model = StatefulLstmModel(n_neurons, learning_rate, num_layers, rnn_type, n_repeats)
+        model = StatefulLstmModel(n_neurons, learning_rate, num_layers, rnn_type, n_repeats, is_stateful)
         self.data_manipulator = data_manipulator
         self.model = model
 
@@ -530,7 +530,7 @@ if __name__ == '__main__':
     strategy_list = trade_strategy_factory.create_from_file(strategy_cache_file, 10)
     stock_worm = StockWorm('HM-B', 992, npy_path, 'my_model')
 
-    features=[60.0 , 0.004 , 1.0 , 0.0 , 40.0 , 20.0 ,  1.0 , 99.0,  20.0 , 1.0,  1.0 , 1.0,  1.0, 0.0]
+    features=[60.0 , 0.004 , 1.0 , 0.0 , 40.0 , 20.0 ,  1.0 , 99.0,  20.0 , 1.0,  1.0 , 1.0,  1.0, 1.0]
     total_profit, profit_daily, errors_daily = stock_worm.init(features, strategy_list, 0, 80)
     print("Training finished: total_profit:{}".format(total_profit))
     print("prod of profit_daily:{}".format(np.prod(np.array(profit_daily)+1)-1))
