@@ -10,7 +10,8 @@ class NetAttributes:
                  learning_rate = 0.003, 
                  num_layers = 1,
                  rnn_type = 2,
-                 n_repeats = 2):
+                 n_repeats = 2,
+                 is_stateful = 1):
         self.n_neurons = n_neurons;
         self.learning_rate = learning_rate;
         self.num_layers = num_layers;
@@ -19,6 +20,7 @@ class NetAttributes:
         self.n_steps = None
         self.n_inputs = None
         self.n_outputs = 1
+        self.is_stateful = is_stateful
         
     def set_input_dimension(self, n_steps, n_inputs):
         self.n_steps = n_steps
@@ -35,13 +37,15 @@ class StatefulLstmModel:
                 learning_rate=0.002,
                 num_layers=2,
                 rnn_type=1,
-                n_repeats=30):
+                n_repeats=30,
+                is_stateful=1):
 
         self.net_attributes = NetAttributes(n_neurons,
                                    learning_rate,
                                    num_layers,
                                    rnn_type,
-                                   n_repeats)
+                                   n_repeats,
+                                   is_stateful)
         self.net_states = NetStates()
         self.model_initialized = False
         self.sess = None
@@ -132,7 +136,7 @@ class StatefulLstmModel:
 
         self.init.run(session=sess)
         # if this is the first time of fit?
-        if self.net_states.training_states == None:
+        if self.net_states.training_states == None or self.net_attributes.is_stateful:
             init_states = np.zeros((net_attributes.num_layers, 2, 1, net_attributes.n_neurons))
         else:
             init_states = self.net_states.training_states

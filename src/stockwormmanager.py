@@ -29,7 +29,8 @@ class StockWormManager:
       {'name': 'time_format', 'type': 'discrete', 'domain': (0,1,2)}, #1 for stepofday, 2 for stepofweek
       {'name': 'volume_input', 'type': 'discrete', 'domain': (0,1)},
       {'name': 'use_centralized_bid', 'type': 'discrete', 'domain': (0,1)},
-      {'name': 'split_daily_data', 'type': 'discrete', 'domain': (1,)}
+      {'name': 'split_daily_data', 'type': 'discrete', 'domain': (1,)},
+      {'name': 'is_stateful', 'type': 'discrete', 'domain': (0,1)},
      ]
 
     mixed_domain_test = [{'name': 'n_neurons', 'type': 'discrete', 'domain': tuple(range(20,160,20))},
@@ -44,7 +45,8 @@ class StockWormManager:
       {'name': 'time_format', 'type': 'discrete', 'domain': (0,1,2)}, #1 for stepofday, 2 for stepofweek
       {'name': 'volume_input', 'type': 'discrete', 'domain': (0,1)},
       {'name': 'use_centralized_bid', 'type': 'discrete', 'domain': (0,1)},
-      {'name': 'split_daily_data', 'type': 'discrete', 'domain': (0,1)}
+      {'name': 'split_daily_data', 'type': 'discrete', 'domain': (0,1)},
+      {'name': 'is_stateful', 'type': 'discrete', 'domain': (0,1)},
      ]
 
     def __init__(self, stock_name, stock_data_path, npy_files_path):
@@ -67,7 +69,7 @@ class StockWormManager:
         else:
             mixed_domain = self.mixed_domain
 
-        self.optimize_result = OptimizeResult(result_column_index=15)
+        self.optimize_result = OptimizeResult(result_column_index=-2)
         stock_worm_cache_file = self.get_stockworm_cache_file(start_day_index, end_day_index)
 
         if os.path.isfile(stock_worm_cache_file):

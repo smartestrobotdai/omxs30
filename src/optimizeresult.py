@@ -87,6 +87,12 @@ class OptimizeResult:
 		min_best_value = df[by].sort_values(ascending=False).iloc[n_top_rows]
 		return values > min_best_value
 
+	def get_n_columns(self):
+		return self.data.shape[1]
+
+	def add_column(self, before_col_index, value):
+		self.data = np.insert(self.data, before_col_index, value, axis=1)
+
 	def save(self, filename):
 		np.savetxt(filename, self.data, delimiter=',')
 
@@ -99,6 +105,8 @@ class OptimizeResult:
 		shape = self.data.shape
 		if len(self.data.shape) == 1:
 			self.data = self.data.reshape(1, shape[0])
+
+
 
 if __name__ == '__main__':
 	print("find strategies")

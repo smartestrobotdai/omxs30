@@ -43,6 +43,7 @@ class StockWorm:
         volume_input = int(features[10])
         use_centralized_bid = int(features[11])
         split_daily_data = int(features[12])
+        is_stateful = int(features[13])
 
         data_manipulator = DataManipulator(self.stock_name,
                                            self.stock_id,
@@ -516,7 +517,8 @@ if __name__ == '__main__':
     import shutil
 
     model_save_path = 'my_model'
-    shutil.rmtree(model_save_path)
+    if os.path.isdir(model_save_path):
+        shutil.rmtree(model_save_path)
 
 
     npy_path = get_preprocessed_data_dir()
@@ -528,7 +530,7 @@ if __name__ == '__main__':
     strategy_list = trade_strategy_factory.create_from_file(strategy_cache_file, 10)
     stock_worm = StockWorm('HM-B', 992, npy_path, 'my_model')
 
-    features=[60.0 , 0.004 , 1.0 , 0.0 , 40.0 , 20.0 ,  1.0 , 99.0,  20.0 , 1.0,  1.0 , 1.0,  1.0]
+    features=[60.0 , 0.004 , 1.0 , 0.0 , 40.0 , 20.0 ,  1.0 , 99.0,  20.0 , 1.0,  1.0 , 1.0,  1.0, 0.0]
     total_profit, profit_daily, errors_daily = stock_worm.init(features, strategy_list, 0, 80)
     print("Training finished: total_profit:{}".format(total_profit))
     print("prod of profit_daily:{}".format(np.prod(np.array(profit_daily)+1)-1))
