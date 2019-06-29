@@ -78,7 +78,9 @@ class OptimizeResult:
 		by = self.get_result_column_index()
 		df = pd.DataFrame(self.data)
 		df = df.sort_values(by=by,  ascending=False)
-		print(df.head(n_top_rows))
+		#temporaly display all columns
+		with pd.option_context('display.max_rows', None):
+			print(df.head(n_top_rows))
 		return df.head(n_top_rows).values
 
 	def is_best_results(self, n_top_rows, value):
