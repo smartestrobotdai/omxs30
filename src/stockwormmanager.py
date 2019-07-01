@@ -21,7 +21,7 @@ class StockWormManager:
       {'name': 'learning_rate', 'type': 'discrete', 'domain': (0.001,0.002,0.003,0.004)},
       {'name': 'num_layers', 'type': 'discrete', 'domain': (1,2,3,4,5,6,7,8)},
       {'name': 'rnn_type', 'type': 'discrete', 'domain': (0,1,2)},
-      {'name': 'learning_period', 'type': 'discrete', 'domain': (20,30,40)},
+      {'name': 'learning_period', 'type': 'discrete', 'domain': (20,30,40,50)},
       {'name': 'prediction_period', 'type': 'discrete', 'domain': (5,10,20)},
       {'name': 'n_repeats', 'type': 'discrete', 'domain': (1,3,5,10,20,30,40)},
       {'name': 'beta', 'type': 'discrete', 'domain': (99,)},
@@ -63,7 +63,7 @@ class StockWormManager:
         self.worm_list = []
 
     def search_worms(self, start_day_index, end_day_index, 
-        max_iter=300, is_test=False, search_strategy=False):
+      max_iter=300, is_test=False, search_strategy=False):
         if is_test == True:
             mixed_domain = self.mixed_domain_test
         else:
