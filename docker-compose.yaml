@@ -27,7 +27,7 @@ services:
       - PGADMIN_DEFAULT_EMAIL=ken.dai@outlook.com
       - PGADMIN_DEFAULT_PASSWORD=dai
     volumes:
-      - ./pgadmin4/servers.json:/servers.json
+      - ./pgadmin4/servers.json:/pgadmin4/servers.json
     environment:
       - PGADMIN_DEFAULT_EMAIL=ken.dai@outlook.com
       - PGADMIN_DEFAULT_PASSWORD=dai

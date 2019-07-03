@@ -8,8 +8,6 @@
             "MaintenanceDB": "postgres",
             "Username": "postgres",
             "SSLMode": "prefer",
-            "SSLCert": "<STORAGE_DIR>/.postgresql/postgresql.crt",
-            "SSLKey": "<STORAGE_DIR>/.postgresql/postgresql.key",
             "SSLCompression": 0,
             "Timeout": 0,
             "UseSSHTunnel": 0,
