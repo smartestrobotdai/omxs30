@@ -4,3 +4,4 @@ GPy
 matplotlib
 GPyOpt
 ipywidgets
+asyncio-nats-client
