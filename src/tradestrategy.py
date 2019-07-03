@@ -177,8 +177,6 @@ class TradeStrategy:
             hold_steps = 0
 
             for step in range(len(daily_data)):
-
-
                 time = daily_data[step][0]
                 value = daily_data[step][1]
                 price = daily_data[step][2]
@@ -202,6 +200,10 @@ class TradeStrategy:
                         if trade_profit-1 < stop_loss:
                             print_verbose("stop loss stop trading!")
                             n_trades = n_max_trades
+
+                        elif trade_profit-1 > stop_gain:
+                            print_verbose("stop gain stop trading!")
+                            n_trades = n_max_trades          
 
                         change_rate = (1+change_rate)*(1-cost)-1 
                         tot_profit *= (1 + change_rate)
