@@ -152,7 +152,9 @@ class StockWorm:
 
         actions = results[:,:,2]
         n_steps = len(self.data_today)
-        return output_scaled_daily[:n_steps], actions[:n_steps]
+        assert(actions.shape[0] == 1)
+        assert(output_scaled_daily.shape[0] == 1)
+        return output_scaled_daily[0, -1], actions[0, -1]
         
     def func_test_test_realtime(self, date=None, n_steps=5):
         if date == None:
