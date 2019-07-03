@@ -5,7 +5,7 @@ from stockwormmanager import StockWormManager
 from util import *
 
 if len(sys.argv) < 4:
-	print("usage: python3 create-worms.py stock_name, start_day_index end_day_index [number=5]")
+	print("usage: python3 create-worms.py stock_name, start_day_index end_day_index [number=1]")
 	sys.exit()
 
 stock_name = sys.argv[1]

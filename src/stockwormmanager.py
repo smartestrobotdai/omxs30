@@ -154,7 +154,7 @@ class StockWormManager:
         return os.path.join(swarm_path, "strategy_cache.txt")
 
     def update_worms_from_cache(self, n_number, start_day_index, end_day_index):
-        optimize_result = OptimizeResult(result_column_index=15)
+        optimize_result = OptimizeResult(result_column_index=-2)
         stockworm_cache_file = self.get_stockworm_cache_file(start_day_index, end_day_index)
         optimize_result.load(stockworm_cache_file)
         top_worms = optimize_result.get_best_results(n_number)
@@ -165,7 +165,7 @@ class StockWormManager:
 
         assert(len(top_worms) == n_number)
         for i in range(n_number):
-          features = top_worms[i, :13]
+          features = top_worms[i, :14]
           model_save_path = self.get_model_save_path(start_day_index, end_day_index, features)
           new_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, model_save_path)
           if os.path.isdir(model_save_path) and new_worm.load() == True:
