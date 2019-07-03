@@ -72,8 +72,8 @@ fi
 
 
 
-docker-compose down
-sleep 5
+#docker-compose down
+#sleep 5
 
 cd src/tools
 /usr/bin/python3 -u omx30-prep.py
