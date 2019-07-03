@@ -85,7 +85,7 @@ class StockWorm:
         return max_total_profit, max_profit_daily, errors_daily
     
     
-    def test(self, end_date=None):
+    def test(self, end_date=None, verbose=False):
         # find the start_day_index
         assert(self.learning_end_date != None)
         n_learning_days = self.data_manipulator.get_learning_days()
@@ -108,7 +108,7 @@ class StockWorm:
         n_data_appended = 0
         if end_day_index != learning_end_day_index + 1:
             strategy_data_input, real_values, errors_daily = self.test_model_base(start_day_index, end_day_index)
-            total_profit, profit_daily, change_rate = self.strategy_model.get_profit(strategy_data_input)
+            total_profit, profit_daily, change_rate = self.strategy_model.get_profit(strategy_data_input, verbose)
 
 
             historic_data = np.concatenate((strategy_data_input, change_rate, real_values), axis=2)
