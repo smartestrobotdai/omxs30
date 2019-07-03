@@ -123,6 +123,7 @@ class StockWorm:
         # do predction until yesterday's close time and change model states.
         self.test(end_date)
         self.last_price = self.data_manipulator.get_last_price(end_date)
+        self.data_today = []
 
     # this method need to be called every minute.
     def test_realtime(self, timestamp, price, volume):
@@ -137,8 +138,21 @@ class StockWorm:
         outputs = self.model.predict_realtime(input_data)
         outputs_scaled = self.data_manipulator.inverse_transform_output(outputs)
 
-        output_scaled_daily = self.data_manipulator.seq_data_2_daily_data(outputs_scaled)
-        return output_scaled_daily
+
+        outputs_scaled = np.squeeze(outputs_scaled)
+        output_scaled_daily = self.data_manipulator.seq_data_2_daily_data(outputs_scaled, is_remove_centralized=True)
+
+        timestamp = self.data_manipulator.seq_data_2_daily_data(timestamp, is_remove_centralized=True)
+
+        price = self.data_manipulator.seq_data_2_daily_data(price, is_remove_centralized=True)
+
+
+        strategy_input = np.stack((timestamp, output_scaled_daily, price), axis=2)
+        tot_profit, daily_profit_list, results = self.strategy_model.get_profit(strategy_input, verbose=True)
+
+        actions = results[:,:,2]
+        n_steps = len(self.data_today)
+        return output_scaled_daily[:n_steps], actions[:n_steps]
         
     def func_test_test_realtime(self, date=None, n_steps=5):
         if date == None:
@@ -161,9 +175,9 @@ class StockWorm:
 
 
         for i in range(n_steps):
-            output_scaled_daily = self.test_realtime(df.iloc[i]['timestamp'], df.iloc[i]['last'], df.iloc[i]['volume'])
+            output_scaled_daily, actions = self.test_realtime(df.iloc[i]['timestamp'], df.iloc[i]['last'], df.iloc[i]['volume'])
 
-        return output_scaled_daily
+        return output_scaled_daily, actions
 
 
     def append_historic_data(self, historic_data):
@@ -468,7 +482,7 @@ class StockWorm:
         sell_threshold = np.array([strategy_features[1]] * len(x))
 
         # the real values
-        real_values = self.historic_data[day_index,:,5]
+        real_values = self.historic_data[day_index,:,6]
         # the predicted values
 
 
@@ -546,9 +560,12 @@ if __name__ == '__main__':
     #stock_worm2.plot()
     stock_worm2.report()
     n_steps = 20
-    outputs_realtime = stock_worm2.func_test_test_realtime('190620', n_steps=n_steps)
+    outputs_realtime, actions = stock_worm2.func_test_test_realtime('190620', n_steps=n_steps)
     print("predicted values - realtime")
-    print(outputs_realtime[:, 7:n_steps])
+    print(outputs_realtime[:, :n_steps])
+    print("actions")
+    print(actions[:, :n_steps])
+
 
 
     print("Testing non-realtime function")
