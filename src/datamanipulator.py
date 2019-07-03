@@ -256,8 +256,11 @@ class DataManipulator:
             shape = seq_data.shape
             n_days = int(shape[0] / 2)
             n_steps = shape[1] * 2
-            n_columns = shape[2]
-            daily_arr = seq_data.reshape((n_days, n_steps, n_columns))
+            if len(shape) == 2:
+                daily_arr = seq_data.reshape((n_days, n_steps))    
+            else:
+                n_columns = shape[2]
+                daily_arr = seq_data.reshape((n_days, n_steps, n_columns))
 
         # remove the centralized bid part of data.
         # from 9:01 to 17:24
