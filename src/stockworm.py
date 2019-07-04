@@ -119,7 +119,7 @@ class StockWorm:
         _,_,testing_total_profit, testing_profit_list = self.get_historic_metrics()
         return  testing_total_profit, testing_profit_list, n_data_appended
 
-    def start_realtime_prediction(self, end_date):
+    def start_realtime_prediction(self, end_date=None):
         # do predction until yesterday's close time and change model states.
         self.test(end_date)
         self.last_price = self.data_manipulator.get_last_price(end_date)
