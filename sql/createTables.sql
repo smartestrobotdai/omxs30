@@ -61,3 +61,14 @@ INSERT INTO stocks(stock_id, stock_name) VALUES(1027,    'TEL2-B');
 INSERT INTO stocks(stock_id, stock_name) VALUES(5095,    'TELIA');
 INSERT INTO stocks(stock_id, stock_name) VALUES(366,     'VOLV-B');
 INSERT INTO stocks(stock_id, stock_name) VALUES(0,     'OMXS30');
+
+
+CREATE TYPE transaction_type AS ENUM ('buy', 'sell');
+CREATE TABLE IF NOT EXISTS transactions(stock_id VARCHAR(10) NOT NULL, 
+                                        time_stamp  timestamp with time zone NOT NULL,
+                                        transaction transaction_type NOT NULL,
+                                        PRIMARY KEY(stock_id, time_stamp, transaction)
+                                    );
+
+CREATE INDEX IF NOT EXISTS transactions_time_stamp_idx
+  ON transactions(time_stamp);
