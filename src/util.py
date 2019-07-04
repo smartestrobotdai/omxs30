@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import statistics
 import time
+import psycopg2
 
 stock_map = [(3966,"ABB"),
 	(18634,"ALFA"),
@@ -204,3 +205,26 @@ def add_step_columns(df):
     day_of_week = df['timestamp'].iloc[0].weekday()
     df['step_of_week'] = len(df) * day_of_week + df['step_of_day']
     return df
+
+async def write_transaction(conn, stock_id, time, transaction):
+	try:
+		postgres_insert_query = """ INSERT INTO transactions (stock_id, time_stamp, transaction) VALUES (%s,to_timestamp(%s),%s)"""
+		cursor = conn.cursor()
+		cursor.execute(postgres_insert_query, (stock_id, time, transaction))
+		conn.commit()
+	except (Exception, psycopg2.Error) as error :
+		print(error)
+
+def connect_postgres():
+	print("Connecting to PostgreSQL...")
+	conn = psycopg2.connect(host="localhost",database="postgres", user="postgres", password="dai")
+	print('PostgreSQL database version:')
+	cur = conn.cursor()
+	cur.execute('SELECT version()')
+
+	# display the PostgreSQL database server version
+	db_version = cur.fetchone()
+	print(db_version)
+
+	print("Connected to PostgreSQL...")
+	return conn
