@@ -36,6 +36,19 @@ services:
     networks:
       postgres:
 
+  nats:
+    container_name: nats-omxs
+    image: nats
+    restart: unless-stopped
+    expose:
+      - "4222"
+      - "6222"
+    ports:
+      - "4222:4222"
+    networks:
+      nats:
+
 networks:
     postgres:
+    nats:
     
