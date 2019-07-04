@@ -10,7 +10,7 @@ while [ 1 ]
 do
   DATE=`date -u`
   echo "$DATE Starting $RUN runs"
-  python3 ./search-worms.py $1 $2 $3 $4
+  python3 ./search-worms.py -u $1 $2 $3 $4
   echo "$DATE Finishing $RUN runs"
   RUN=`expr $RUN + 1`
 done
