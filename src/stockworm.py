@@ -15,6 +15,10 @@ import matplotlib.dates as dates
 from ipywidgets import interact
 import ipywidgets as widgets
 
+# historic_data format:
+# shape(days, steps, columns)
+# columns: time, predicted_value, price, stock_change_rate, asset_change_rate, action, real_value
+
 
 class StockWorm:
     def __init__(self, stock_name, stock_id, input_data_path, save_path):
@@ -291,6 +295,13 @@ class StockWorm:
  
         return np.squeeze(all_outputs), np.squeeze(errors), learning_end-1
 
+    def get_test_data(self):
+        training_data_length = self.get_training_data_len()
+        return self.historic_data[training_data_length:]
+
+    def get_training_data(self):
+        training_data_length = self.get_training_data_len()
+        return self.historic_data[:training_data_length]
     
     def get_data_manipulator_filename(self, path):
         return os.path.join(path, 'data_manipulator.pkl')
