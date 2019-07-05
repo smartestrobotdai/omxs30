@@ -76,6 +76,12 @@ def get_current_date():
 	strDate = time.strftime('%y%m%d')
 	return strDate
 
+def date_2_day_index(data, date):
+	timestamps = data[:,:,5]
+	for i in range(len(timestamps)):
+	    if timestamp2date(timestamps[i][0]) == date:
+	        return i
+	return None
 
 def timestamp2date(timestamp):
 	return timestamp.date().strftime("%y%m%d")
@@ -138,6 +144,8 @@ def create_if_not_exist(path):
 
 # input: df - dataframe, must have timestamp, 
 def preprocessing_daily_data(df, last_close=None, calculate_values=True):
+	# if the data is not from 9:00:00, we must fix it.
+	open_today = df['last'].iloc[0]
 	# some data might miss, we must make a right join with full time series
 	# and do fillna.
 
@@ -154,6 +162,11 @@ def preprocessing_daily_data(df, last_close=None, calculate_values=True):
 	    df3['last'].iloc[0] = df3['last'].iloc[6]
 	else:
 	    df3['last'].iloc[0] = last_close
+
+
+	# if the daily data is not started from 9:00:00, we must set it as the open price.
+	if df3['last'].iloc[6] != open_today:
+		df3['last'].iloc[6] = open_today
 
 
 	df3['last'].interpolate(method='linear', inplace=True)
