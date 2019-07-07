@@ -13,8 +13,9 @@ class TradeStrategyFactory:
                  {'name': 'sell_threshold', 'type': 'discrete', 'domain': tuple(np.around(np.arange(-0.005, 0.0, 0.0001),4))},
                  {'name': 'stop_loss', 'type': 'discrete', 'domain': tuple(np.around(np.arange(-0.01,-0.003, 0.001),3))},
                  {'name': 'stop_gain', 'type': 'discrete', 'domain': tuple(np.around(np.arange(0.002, 0.02,0.001),3))},
+                 {'name': 'skip_at_beginning', 'type': 'discrete', 'domain': (0,5, 10, 20)}
          ]
-    def __init__(self, cache_file=None,  n_max_trades_per_day=4, slippage=0.00015, courtage=0):
+    def __init__(self, cache_file=None,  n_max_trades_per_day=2, slippage=0, courtage=0):
         self.n_max_trades_per_day = n_max_trades_per_day
         self.slippage = slippage
         self.courtage = courtage
@@ -22,8 +23,8 @@ class TradeStrategyFactory:
 
         # load the initial data file
         self.optimize_result = OptimizeResult(result_column_index=-1)
+        self.cache_file = cache_file
         if cache_file is not None:
-            self.cache_file = cache_file
             self.optimize_result.load(cache_file)
         return
 
@@ -45,11 +46,11 @@ class TradeStrategyFactory:
         self.data = data
         init_numdata = int(max_iter / 4)
         trade_strategy_list = []
+        self.max_profit = -1
+        self.trade_strategy = None
         for i in range(iter):
             print("Searching Strategies, Run: {}".format(i))
             self.n_iter = 0
-            self.trade_strategy = None
-            self.max_profit = -1
             myBopt = GPyOpt.methods.BayesianOptimization(self.get_profit,  # Objective function       
                                                  domain=self.mixed_domain,          # Box-constraints of the problem
                                                  initial_design_numdata = init_numdata,   # Number data initial design
@@ -59,19 +60,14 @@ class TradeStrategyFactory:
 
             myBopt.run_optimization(max_iter, eps=0)
 
-            trade_strategy_list.append(self.trade_strategy)
 
-        return trade_strategy_list
+        return self.trade_strategy
 
 
 
     def get_profit(self, X_list):
         assert(len(X_list)==1)
         X_list = X_list[0]
-        buy_threshold = X_list[0]
-        sell_threshold = X_list[1]
-        stop_loss = X_list[2]
-        stop_gain = X_list[3]
 
         self.n_iter += 1
         cached_result, index = self.optimize_result.find_result(X_list)
@@ -93,13 +89,12 @@ class TradeStrategyFactory:
             self.max_profit = avg_daily_profit
             self.trade_strategy = trade_strategy
  
-
-        
         if self.n_iter % 10 == 0:
             print("iteration: {}, cachesize={}, avg_daily_profit:{}".format(self.n_iter, 
                 self.optimize_result.get_size(),
                 avg_daily_profit))
-            self.optimize_result.save(self.cache_file)
+            if self.cache_file != None:
+                self.optimize_result.save(self.cache_file)
 
         return avg_daily_profit.reshape((1,1))
 
@@ -114,6 +109,7 @@ class TradeStrategy:
         self.sell_threshold = X_list[1]
         self.stop_loss = X_list[2]
         self.stop_gain = X_list[3]
+        self.skip_at_beginning = X_list[4]
         self.slippage = slippage
         self.courtage = courtage
         self.n_max_trades_per_day = n_max_trades_per_day
@@ -121,20 +117,18 @@ class TradeStrategy:
 
     def get_parameter_str(self):
         s = "buy_threshold:{} sell_threshold:{} stop_loss:{} \
-            stop_gain:{}".format(self.buy_threshold,
+            stop_gain:{}, skip_at_beginning: {}".format(self.buy_threshold,
                                   self.sell_threshold,
                                   self.stop_loss,
-                                  self.stop_gain)
+                                  self.stop_gain,
+                                  self.skip_at_beginning)
         return s
 
     def to_list(self):
-        return [self.buy_threshold, self.sell_threshold, self.stop_loss, self.stop_gain]
+        return [self.buy_threshold, self.sell_threshold, self.stop_loss, self.stop_gain, self.skip_at_beginning]
 
     def get_features(self):
-        return (self.buy_threshold, self.sell_threshold, self.stop_loss, self.stop_gain)
-
-
-
+        return (self.buy_threshold, self.sell_threshold, self.stop_loss, self.stop_gain, self.skip_at_beginning)
 
     def get_profit(self,  input_data, verbose=False):
         # the centralized part must be removed
@@ -152,6 +146,7 @@ class TradeStrategy:
         sell_threshold = X_list[1]
         stop_loss = X_list[2]
         stop_gain = X_list[3]
+        skip_at_beginning = int(X_list[4])
 
         tot_profit = 1
         tot_stock_profit = 1
@@ -191,6 +186,7 @@ class TradeStrategy:
                     n_trades < n_max_trades and \
                     step < len(daily_data)-5 and \
                     value > buy_threshold and \
+                    step > skip_at_beginning and \
                     hit_stop == False:
                         state = 1
                         asset_change_rate[day_idx][step] = -cost
@@ -208,13 +204,18 @@ class TradeStrategy:
                         if trade_profit-1 < stop_loss:
                             print_verbose("stop loss stop trading!")
                             hit_stop = True
+                            change_rate = (1+max(stop_loss,change_rate))*(1-cost)-1
+
 
                         elif trade_profit-1 > stop_gain:
                             print_verbose("stop gain stop trading!")
                             hit_stop = True
+                            change_rate = (1+min(stop_gain,change_rate))*(1-cost)-1                            
+                        else:
+                            change_rate = (1+change_rate)*(1-cost)-1 
 
                         actions[day_idx][step] = -1  # sell
-                        change_rate = (1+change_rate)*(1-cost)-1 
+                        
                         tot_profit *= (1 + change_rate)
                         daily_profit *= (1 + change_rate)
                         state = 0

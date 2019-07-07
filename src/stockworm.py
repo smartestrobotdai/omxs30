@@ -4,6 +4,7 @@ import pandas as pd
 import uuid
 import os.path
 import pickle
+from tradestrategy import TradeStrategyFactory
 from datamanipulator import DataManipulator
 from statefullstmmodel import StatefulLstmModel
 from util import *
@@ -33,7 +34,7 @@ class StockWorm:
         self.historic_data = None
         self.data_today = []
 
-    def init(self, features, strategy_model_list, start_day_index, end_day_index):
+    def init(self, features, start_day_index, end_day_index):
         n_neurons = int(features[0])
         learning_rate = features[1]
         num_layers = int(features[2])
@@ -68,22 +69,11 @@ class StockWorm:
 
         strategy_data_input, real_values, errors_daily = self.test_model_base(start_day_index, end_day_index)
 
-        max_total_profit = -1
-        max_profit_daily = None
-        best_strategy_model = None
-        best_change_rate = None
-        assert(len(strategy_model_list)>0)
-        for strategy_model in strategy_model_list:
-          total_profit, profit_daily, change_rate = strategy_model.get_profit(strategy_data_input)
-          if total_profit > max_total_profit:
-            max_total_profit = total_profit
-            max_profit_daily = profit_daily
-            best_strategy_model = strategy_model
-            best_change_rate = change_rate
+        strategy_factory = TradeStrategyFactory()
+        strategy_model = strategy_factory.create_trade_strategies(strategy_data_input, iter=1)
+        total_profit, profit_daily, change_rate = strategy_model.get_profit(strategy_data_input)
 
-        self.strategy_model = best_strategy_model
-        print(strategy_data_input.shape)
-        print(real_values.shape)
+        self.strategy_model = strategy_model
         self.historic_data = np.concatenate((strategy_data_input, best_change_rate, real_values), axis=2)
 
         return max_total_profit, max_profit_daily, errors_daily
@@ -550,15 +540,11 @@ if __name__ == '__main__':
 
     npy_path = get_preprocessed_data_dir()
     stock_data_path = get_stock_data_dir()
-    strategy_cache_file = os.path.join(stock_data_path, "HM-B_992", "0-80", "strategy_cache.txt")
-    from tradestrategy import TradeStrategyFactory
-    trade_strategy_factory = TradeStrategyFactory()
 
-    strategy_list = trade_strategy_factory.create_from_file(strategy_cache_file, 10)
     stock_worm = StockWorm('HM-B', 992, npy_path, 'my_model')
 
     features=[60.0 , 0.004 , 1.0 , 0.0 , 40.0 , 20.0 ,  1.0 , 99.0,  20.0 , 1.0,  1.0 , 1.0,  1.0, 1.0]
-    total_profit, profit_daily, errors_daily = stock_worm.init(features, strategy_list, 0, 80)
+    total_profit, profit_daily, errors_daily = stock_worm.init(features, 0, 80)
     print("Training finished: total_profit:{}".format(total_profit))
     print("prod of profit_daily:{}".format(np.prod(np.array(profit_daily)+1)-1))
     stock_worm.save()
