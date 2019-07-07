@@ -74,9 +74,9 @@ class StockWorm:
         total_profit, profit_daily, change_rate = strategy_model.get_profit(strategy_data_input)
 
         self.strategy_model = strategy_model
-        self.historic_data = np.concatenate((strategy_data_input, best_change_rate, real_values), axis=2)
+        self.historic_data = np.concatenate((strategy_data_input, change_rate, real_values), axis=2)
 
-        return max_total_profit, max_profit_daily, errors_daily
+        return total_profit, profit_daily, errors_daily
     
     
     def test(self, end_date=None, verbose=False):

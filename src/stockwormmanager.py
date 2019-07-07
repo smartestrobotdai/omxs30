@@ -63,7 +63,7 @@ class StockWormManager:
         self.worm_list = []
 
     def search_worms(self, start_day_index, end_day_index, 
-      max_iter=300, is_test=False, search_strategy=False):
+      max_iter=300, is_test=False):
         if is_test == True:
             mixed_domain = self.mixed_domain_test
         else:
@@ -79,25 +79,7 @@ class StockWormManager:
             print("cannot find file cache:{}, will create new cache.".format(stock_worm_cache_file))
 
         self.stock_worm_cache_file = stock_worm_cache_file
-
-        strategy_cache_file = self.get_strategy_cache_file(start_day_index, end_day_index)
-        
-        trade_strategy_factory = TradeStrategyFactory(cache_file=strategy_cache_file)
-        if os.path.isfile(strategy_cache_file) and search_strategy == False:
-            print("find strategy_cache:{}, loading...".format(strategy_cache_file))
-            strategy_list = trade_strategy_factory.create_from_file(strategy_cache_file, NUM_STRATEGIES)
-        else:
-          if search_strategy == True:
-            print("search_strategy is True, searching strategies again...")
-          else:
-            print("cannot find strategy cache:{}, generating...".format(strategy_cache_file))
-
-          data = load_strategy_input_data(self.stock_id, start_day_index, end_day_index)
-          # the input data: timestamp, value, and price.
-          strategy_list = trade_strategy_factory.create_trade_strategies(data, 5)
-
-        opt_func = partial(self.opt_func, strategy_list, start_day_index, end_day_index)
-
+        opt_func = partial(self.opt_func, start_day_index, end_day_index)
         opt_handler = GPyOpt.methods.BayesianOptimization(f=opt_func,  # Objective function       
                                      domain=mixed_domain,           # Box-constraints of the problem
                                      initial_design_numdata = 30,   # Number data initial design
@@ -106,7 +88,7 @@ class StockWormManager:
                                      maximize = True)           # True evaluations, no sample noise
         opt_handler.run_optimization(max_iter, eps=0)
 
-    def opt_func(self, strategy_list, start_day, end_day, X_list):
+    def opt_func(self, start_day, end_day, X_list):
         assert(len(X_list) == 1)
         features = X_list[0]
         print("starting test: {}".format(self.get_parameter_str(features)))  
@@ -121,7 +103,7 @@ class StockWormManager:
             model_save_path = self.get_model_save_path(start_day, end_day, features)
             stock_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, model_save_path)
             total_profit, profit_daily, errors_daily = stock_worm.init(features, 
-                strategy_list, start_day, end_day)
+                start_day, end_day)
 
 
             n_days = len(profit_daily)
@@ -149,19 +131,12 @@ class StockWormManager:
         swarm_path = self.get_swarm_path(start_day_index, end_day_index)
         return os.path.join(swarm_path, "stockworm_cache.txt")
 
-    def get_strategy_cache_file(self, start_day_index, end_day_index):
-        swarm_path = self.get_swarm_path(start_day_index, end_day_index)
-        return os.path.join(swarm_path, "strategy_cache.txt")
 
     def update_worms_from_cache(self, n_number, start_day_index, end_day_index):
         optimize_result = OptimizeResult(result_column_index=-2)
         stockworm_cache_file = self.get_stockworm_cache_file(start_day_index, end_day_index)
         optimize_result.load(stockworm_cache_file)
         top_worms = optimize_result.get_best_results(n_number)
-
-        trade_strategy_factory = TradeStrategyFactory()
-        strategy_cache_file = self.get_strategy_cache_file(start_day_index, end_day_index)
-        strategy_list = trade_strategy_factory.create_from_file(strategy_cache_file, NUM_STRATEGIES)
 
         assert(len(top_worms) == n_number)
         for i in range(n_number):
@@ -171,7 +146,7 @@ class StockWormManager:
           if os.path.isdir(model_save_path) and new_worm.load() == True:
               pass
           else:
-              total_profit, profit_daily, errors_daily = new_worm.init(features, strategy_list, start_day_index, end_day_index)
+              total_profit, profit_daily, errors_daily = new_worm.init(features, start_day_index, end_day_index)
               new_worm.save()
               print("training finished for model {}, total_profit:{}".format(i, total_profit))
             
