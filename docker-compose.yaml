@@ -36,6 +36,17 @@ services:
     networks:
       postgres:
 
+  grafana:
+    container_name: grafana-omxs
+    image: grafana/grafana:5.1.0
+    ports:
+      - 3000:3000
+    volumes:
+      - ./grafana-provisioning/:/etc/grafana/provisioning/
+    user: "104"
+    networks:
+      postgres:
+
   nats:
     container_name: nats-omxs
     image: nats
@@ -47,6 +58,8 @@ services:
       - "4222:4222"
     networks:
       nats:
+
+
 
 networks:
     postgres:
