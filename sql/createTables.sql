@@ -72,3 +72,12 @@ CREATE TABLE IF NOT EXISTS transactions(stock_id VARCHAR(10) NOT NULL,
 
 CREATE INDEX IF NOT EXISTS transactions_time_stamp_idx
   ON transactions(time_stamp);
+
+CREATE TABLE IF NOT EXISTS differences(time_stamp  timestamp with time zone NOT NULL,
+                                        diff_omxs30 real,
+                                        diff_profit real,
+                                        PRIMARY KEY(time_stamp)
+                                    );
+
+CREATE INDEX IF NOT EXISTS differences_time_stamp_idx
+  ON transactions(differences);
