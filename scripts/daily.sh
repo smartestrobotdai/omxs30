@@ -32,7 +32,7 @@ sleep 5
 echo "`date` started fetching data"
 echo "node version: `node -v`"
 sleep 10
-cd data-sink/
+cd ${DAILY_SCRIPT_HOME}
 node daily.js
 node minute.js
 if [ $? -ne 0 ]; then
@@ -59,15 +59,22 @@ fi
 
 
 
-PGPASSWORD=dai psql -h 0.0.0.0 -U postgres -f export_data.sql
+PGPASSWORD=dai psql -h 0.0.0.0 -U postgres -f scripts/export_data.sql
 docker cp postgres-omxs:/tmp/data.csv ./data
-rm -rf data/data.csv.gz
+docker cp postgres-omxs:/tmp/data_daily.csv ./data
+rm -rf data/data.csv.gz data_daily.csv.gz
 gzip data/data.csv
+gzip data/data_daily.csv
+
 
 if [ $UPLOAD_TO_GDRIVE == "1" ]; then
 	echo "uploading data.csv.gz"
 	FILE_ID=`gdrive list | grep "data.csv.gz" | awk '{print $1}'`
 	gdrive update ${FILE_ID} data/data.csv.gz
+
+  echo "uploading data_daily.csv.gz"
+  FILE_ID=`gdrive list | grep "data_daily.csv.gz" | awk '{print $1}'`
+  gdrive update ${FILE_ID} data/data_daily.csv.gz
 fi
 
 
