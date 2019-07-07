@@ -41,7 +41,7 @@ class TradeStrategyFactory:
 
         return trade_strategy_list
 
-    def create_trade_strategies(self, data, iter, max_iter=200):
+    def create_trade_strategies(self, data, iter, max_iter=100):
         assert(data.shape[1]==504)
         self.data = data
         init_numdata = int(max_iter / 4)
