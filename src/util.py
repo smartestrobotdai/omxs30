@@ -213,6 +213,9 @@ def preprocessing_daily_data(df, last_close=None, calculate_values=True):
 
 	return df
 
+def datetime_2_timestamp(dt):
+	return pd.Timestamp(dt, tz='Europe/Stockholm')
+
 def add_step_columns(df):
     df['step_of_day'] = np.arange(0, len(df))
     day_of_week = df['timestamp'].iloc[0].weekday()
