@@ -69,7 +69,7 @@ class StockWormManager:
         else:
             mixed_domain = self.mixed_domain
 
-        self.optimize_result = OptimizeResult(result_column_index=-2)
+        self.optimize_result = OptimizeResult()
         stock_worm_cache_file = self.get_stockworm_cache_file(start_day_index, end_day_index)
 
         if os.path.isfile(stock_worm_cache_file):
@@ -94,10 +94,6 @@ class StockWormManager:
         print("starting test: {}".format(self.get_parameter_str(features)))  
         cached_result, index = self.optimize_result.find_result(features)
         if cached_result is not None:
-            total_profit = cached_result[0]
-            n_days = cached_result[1]
-            profit_mean = cached_result[2]
-            error_mean = cached_result[3]
             print("find from cache. skip...")
         else:
             model_save_path = self.get_model_save_path(start_day, end_day, features)
@@ -105,12 +101,15 @@ class StockWormManager:
             total_profit, profit_daily, errors_daily = stock_worm.init(features, 
                 start_day, end_day)
 
-
             n_days = len(profit_daily)
             profit_mean = np.mean(profit_daily)
             error_mean = np.mean(errors_daily)
 
-            self.optimize_result.insert_result(features, [total_profit, n_days, profit_mean, error_mean])
+            # to do insert strategy features.
+            strategy_features = list(stock_worm.get_strategy_features())
+            self.optimize_result.insert_result(features, strategy_features + 
+              [total_profit, n_days, error_mean, profit_mean])
+
             print("result saved to: {}".format(self.stock_worm_cache_file))
             self.optimize_result.save(self.stock_worm_cache_file)
 
@@ -133,7 +132,7 @@ class StockWormManager:
 
 
     def update_worms_from_cache(self, n_number, start_day_index, end_day_index):
-        optimize_result = OptimizeResult(result_column_index=-2)
+        optimize_result = OptimizeResult()
         stockworm_cache_file = self.get_stockworm_cache_file(start_day_index, end_day_index)
         optimize_result.load(stockworm_cache_file)
         top_worms = optimize_result.get_best_results(n_number)
@@ -141,14 +140,19 @@ class StockWormManager:
         assert(len(top_worms) == n_number)
         for i in range(n_number):
           features = top_worms[i, :14]
+          strategy_features = top_worms[i, 14:19]
           model_save_path = self.get_model_save_path(start_day_index, end_day_index, features)
           new_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, model_save_path)
           if os.path.isdir(model_save_path) and new_worm.load() == True:
               pass
           else:
-              total_profit, profit_daily, errors_daily = new_worm.init(features, start_day_index, end_day_index)
-              new_worm.save()
-              print("training finished for model {}, total_profit:{}".format(i, total_profit))
+
+            total_profit, profit_daily, errors_daily = new_worm.init(features, 
+              start_day_index, 
+              end_day_index,
+              strategy_features=strategy_features)
+            new_worm.save()
+            print("training finished for model {}, total_profit:{}".format(i, total_profit))
             
 
           testing_total_profit, testing_profit_daily, n_data_appended = new_worm.test()

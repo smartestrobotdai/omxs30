@@ -22,7 +22,7 @@ class TradeStrategyFactory:
         self.trade_strategy = None
 
         # load the initial data file
-        self.optimize_result = OptimizeResult(result_column_index=-1)
+        self.optimize_result = OptimizeResult()
         self.cache_file = cache_file
         if cache_file is not None:
             self.optimize_result.load(cache_file)
@@ -104,7 +104,7 @@ def print_verbose_func(verbose, msg):
 
 
 class TradeStrategy:
-    def __init__(self, X_list, n_max_trades_per_day, slippage, courtage):
+    def __init__(self, X_list, n_max_trades_per_day=2, slippage=0, courtage=0):
         self.buy_threshold = X_list[0]
         self.sell_threshold = X_list[1]
         self.stop_loss = X_list[2]

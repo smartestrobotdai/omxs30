@@ -4,7 +4,7 @@ import pandas as pd
 import uuid
 import os.path
 import pickle
-from tradestrategy import TradeStrategyFactory
+from tradestrategy import TradeStrategyFactory, TradeStrategy
 from datamanipulator import DataManipulator
 from statefullstmmodel import StatefulLstmModel
 from util import *
@@ -34,7 +34,7 @@ class StockWorm:
         self.historic_data = None
         self.data_today = []
 
-    def init(self, features, start_day_index, end_day_index):
+    def init(self, features, start_day_index, end_day_index, strategy_features=None):
         n_neurons = int(features[0])
         learning_rate = features[1]
         num_layers = int(features[2])
@@ -69,10 +69,13 @@ class StockWorm:
 
         strategy_data_input, real_values, errors_daily = self.test_model_base(start_day_index, end_day_index)
 
-        strategy_factory = TradeStrategyFactory()
-        strategy_model = strategy_factory.create_trade_strategies(strategy_data_input, iter=1)
-        total_profit, profit_daily, change_rate = strategy_model.get_profit(strategy_data_input)
+        if strategy_features is None:
+            strategy_factory = TradeStrategyFactory()
+            strategy_model = strategy_factory.create_trade_strategies(strategy_data_input, iter=1)
+        else:
+            strategy_model = TradeStrategy(strategy_features)
 
+        total_profit, profit_daily, change_rate = strategy_model.get_profit(strategy_data_input)
         self.strategy_model = strategy_model
         self.historic_data = np.concatenate((strategy_data_input, change_rate, real_values), axis=2)
 
@@ -298,6 +301,9 @@ class StockWorm:
     
     def get_strategy_model_filename(self, path):
         return os.path.join(path, 'strategy.pkl')
+
+    def get_strategy_features(self):
+        return self.strategy_model.get_features()
 
     def get_historic_data_filename(self, path, learning_end_date):
         return os.path.join(path, learning_end_date, 'historic_data.npy')

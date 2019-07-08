@@ -3,7 +3,7 @@ import os.path
 import pandas as pd
 
 class OptimizeResult:
-	def __init__(self, result_column_index):
+	def __init__(self, result_column_index=-1):
 		self.data = None
 		self.filename = "test.txt"
 		self.result_column_index = result_column_index
