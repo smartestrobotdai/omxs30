@@ -98,6 +98,10 @@ class StockWormManager:
         else:
             model_save_path = self.get_model_save_path(start_day, end_day, features)
             stock_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, model_save_path)
+            if stock_worm.validate(features, start_day, end_day) == False:
+              print("validate failed for worm: {}".format(self.get_parameter_str()))
+              return np.array(-1).reshape((1,1))
+
             total_profit, profit_daily, errors_daily = stock_worm.init(features, 
                 start_day, end_day)
 
@@ -146,14 +150,14 @@ class StockWormManager:
           if os.path.isdir(model_save_path) and new_worm.load() == True:
               pass
           else:
-
             total_profit, profit_daily, errors_daily = new_worm.init(features, 
               start_day_index, 
               end_day_index,
               strategy_features=strategy_features)
             new_worm.save()
             print("training finished for model {}, total_profit:{}".format(i, total_profit))
-            
+          
+          new_worm.report()
 
           testing_total_profit, testing_profit_daily, n_data_appended = new_worm.test()
           if n_data_appended > 0:
