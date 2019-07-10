@@ -592,7 +592,7 @@ if __name__ == '__main__':
 
     stock_worm = StockWorm('HM-B', 992, npy_path, 'my_model')
 
-    features=[60.0 , 0.004 , 1.0 , 0.0 , 40.0 , 20.0 ,  1.0 , 99.0,  20.0 , 1.0,  1.0 , 1.0,  1.0, 1.0]
+    features=[60.0 , 0.004 , 1.0 , 0.0 , 40.0 , 20.0 ,  3.0 , 99.0,  20.0 , 1.0,  1.0 , 1.0,  1.0, 1.0]
     total_profit, profit_daily, errors_daily = stock_worm.init(features, 0, 80, is_test=True)
     print("Training finished: total_profit:{}".format(total_profit))
     print("prod of profit_daily:{}".format(np.prod(np.array(profit_daily)+1)-1))

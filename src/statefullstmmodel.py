@@ -130,7 +130,7 @@ class StatefulLstmModel:
             self.reset_graph()
             self.create_model()
 
-        my_loss_train_list = []
+
         sess = tf.Session()
         # TODO: load from file.
 
@@ -142,6 +142,7 @@ class StatefulLstmModel:
             init_states = self.net_states.training_states
             
         for repeat in range(net_attributes.n_repeats):
+            my_loss_train_list = []
             rnn_states = copy.deepcopy(init_states)
             for seq in range(days):
                 X_batch, y_batch = self.get_batch(seq, data_train_input, data_train_output)
