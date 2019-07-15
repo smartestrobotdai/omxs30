@@ -31,6 +31,8 @@ class StockWormManager:
       {'name': 'use_centralized_bid', 'type': 'discrete', 'domain': (0,1)},
       {'name': 'split_daily_data', 'type': 'discrete', 'domain': (1,)},
       {'name': 'is_stateful', 'type': 'discrete', 'domain': (0,1)},
+      {'name': 'ref_stock_id', 'type': 'discrete', 'domain': (-1,992,3524,139301,160271)},
+
      ]
 
     mixed_domain_test = [{'name': 'n_neurons', 'type': 'discrete', 'domain': tuple(range(20,160,20))},
@@ -47,6 +49,7 @@ class StockWormManager:
       {'name': 'use_centralized_bid', 'type': 'discrete', 'domain': (0,1)},
       {'name': 'split_daily_data', 'type': 'discrete', 'domain': (0,1)},
       {'name': 'is_stateful', 'type': 'discrete', 'domain': (0,1)},
+      {'name': 'ref_stock_id', 'type': 'discrete', 'domain': (-1,992,3524,139301,160271)},
      ]
 
     def __init__(self, stock_name, stock_data_path, npy_files_path):
@@ -91,6 +94,13 @@ class StockWormManager:
     def opt_func(self, start_day, end_day, X_list):
         assert(len(X_list) == 1)
         features = X_list[0]
+
+        ref_stock_id = features[14]
+        if ref_stock_id == self.stock_id:
+          ref_stock_id = -1
+
+        features[14] = ref_stock_id
+        
         print("starting test: {}".format(self.get_parameter_str(features)))  
         cached_result, index = self.optimize_result.find_result(features)
         if cached_result is not None:

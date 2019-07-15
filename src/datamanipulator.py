@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn import preprocessing
-from util import remove_centralized, timestamp2date
+from util import remove_centralized, timestamp2date, get_stock_name_by_id, date_2_day_index
 import os.path
 
 class TimeFormat:
@@ -11,7 +11,7 @@ class TimeFormat:
 class DataManipulator:
     def __init__(self,  stock_name, stock_id, n_learning_days,
                 n_prediction_days, beta, ema, time_format, volume_input, use_centralized_bid, 
-                split_daily_data, input_path):
+                split_daily_data, ref_stock_id, input_path):
         self.n_learning_days = n_learning_days
         self.n_prediction_days = n_prediction_days
         self.beta = beta
@@ -25,6 +25,10 @@ class DataManipulator:
         self.next_learning_seq = None
         self.stock_name = stock_name
         self.stock_id = stock_id
+        if ref_stock_id == stock_id:
+            ref_stock_id = -1
+
+        self.ref_stock_id = ref_stock_id
         if split_daily_data == True:
             self.n_learning_seqs = self.n_learning_days * 2
             self.n_prediction_seqs = self.n_prediction_days * 2
@@ -99,8 +103,18 @@ class DataManipulator:
         data = data.reshape((shape[0]*shape[1],shape[2]))
         return preprocessing.MinMaxScaler().fit(data)
 
-    def get_data_file_name(self):
-        npy_file_name = os.path.join(self.input_path, "{}_{}_ema{}_beta{}.npy".format(self.stock_name, self.stock_id, self.ema, self.beta))
+
+
+    def get_data_file_name(self, stock_id=None):
+        if stock_id == None:
+            stock_id = self.stock_id
+            stock_name = self.stock_name
+        else:
+            stock_name = get_stock_name_by_id(stock_id)
+
+        npy_file_name = os.path.join(self.input_path, 
+                "{}_{}_ema{}_beta{}.npy".format(stock_name, stock_id, self.ema, self.beta))
+
         return npy_file_name
 
 
@@ -112,7 +126,7 @@ class DataManipulator:
         n_days = input_np_data.shape[0]
         return n_days
 
-    def purge_data_helper(self, input_np_data):
+    def purge_data_helper(self, input_np_data, ref_input_np_data):
         n_days = input_np_data.shape[0]
         # the diff is the mandatory
         input_columns = [2]
@@ -126,12 +140,19 @@ class DataManipulator:
         
         if self.volume_input == 1:
             input_columns += [3]
-    
+        
 
         input_data = input_np_data[:,:,input_columns]
 
+        if ref_input_np_data is not None:
+            assert(input_np_data.shape == ref_input_np_data.shape)
+            print("ref_stock_id:{}".format(self.ref_stock_id))
+            input_data = np.concatenate((input_data, ref_input_np_data[:,:,2:3]), axis=2)
+
+
         # we must tranform the volume for it is too big.
         if self.volume_input == 1:
+            input_data = np.concatenate((input_data, input_np_data[:,:,3:4]), axis=2)
             input_data[:,:,-1] = self.volume_transform(input_data[:,:,-1])
 
         # output_data must be in shape (day, step, 1)
@@ -160,7 +181,13 @@ class DataManipulator:
         # load numpy file
         npy_file_name = self.get_data_file_name()
         input_np_data = np.load(npy_file_name, allow_pickle=True)
-        return self.purge_data_helper(input_np_data)
+
+        ref_input_np_data = None
+        if self.ref_stock_id != -1:
+            ref_npy_file_name = self.get_data_file_name(self.ref_stock_id)
+            ref_input_np_data = np.load(ref_npy_file_name, allow_pickle=True)
+
+        return self.purge_data_helper(input_np_data, ref_input_np_data)
 
     def purge_data_realtime(self, dataframe):
         input_np_data = dataframe.to_numpy()
@@ -214,11 +241,10 @@ class DataManipulator:
     def date_2_day_index(self, date):
         npy_file_name = self.get_data_file_name()
         input_np_data = np.load(npy_file_name, allow_pickle=True)
-        timestamps = input_np_data[:,:,5]
-        for i in range(len(timestamps)):
-            if timestamp2date(timestamps[i][0]) == date:
-                return i
-        return None
+
+        return date_2_day_index(input_np_data, date)
+
+
 
     def day_index_2_date(self, day_index):
         npy_file_name = self.get_data_file_name()

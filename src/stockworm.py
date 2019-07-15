@@ -58,6 +58,7 @@ class StockWorm:
         use_centralized_bid = int(features[11])
         split_daily_data = int(features[12])
         is_stateful = int(features[13])
+        ref_stock_id = int(features[14])
 
         data_manipulator = DataManipulator(self.stock_name,
                                            self.stock_id,
@@ -67,7 +68,8 @@ class StockWorm:
                                            time_format, 
                                            volume_input, 
                                            use_centralized_bid, 
-                                           split_daily_data, 
+                                           split_daily_data,
+                                           ref_stock_id,
                                            self.input_data_path)
 
         data_manipulator.init_scalers(start_day_index, end_day_index)
@@ -592,7 +594,7 @@ if __name__ == '__main__':
 
     stock_worm = StockWorm('HM-B', 992, npy_path, 'my_model')
 
-    features=[60.0 , 0.004 , 1.0 , 0.0 , 40.0 , 20.0 ,  3.0 , 99.0,  20.0 , 1.0,  1.0 , 1.0,  1.0, 1.0]
+    features=[60.0 , 0.004 , 1.0 , 0.0 , 40.0 , 20.0 ,  3.0 , 99.0,  20.0 , 1.0,  1.0 , 1.0,  1.0, 1.0, -1]
     total_profit, profit_daily, errors_daily = stock_worm.init(features, 0, 80, is_test=True)
     print("Training finished: total_profit:{}".format(total_profit))
     print("prod of profit_daily:{}".format(np.prod(np.array(profit_daily)+1)-1))
