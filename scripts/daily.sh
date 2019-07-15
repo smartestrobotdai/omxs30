@@ -62,7 +62,7 @@ fi
 PGPASSWORD=dai psql -h 0.0.0.0 -U postgres -f scripts/export_data.sql
 docker cp postgres-omxs:/tmp/data.csv ./data
 docker cp postgres-omxs:/tmp/data_daily.csv ./data
-rm -rf data/data.csv.gz data_daily.csv.gz
+rm -rf data/data.csv.gz data/data_daily.csv.gz
 gzip data/data.csv
 gzip data/data_daily.csv
 
