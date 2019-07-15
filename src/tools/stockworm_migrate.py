@@ -14,14 +14,15 @@ for filename in Path(stock_data_path).glob('**/stockworm_cache.txt'):
 	
 	optimize_result = OptimizeResult(result_column_index=-2)
 	optimize_result.load(filename)
-	if (optimize_result.get_n_columns() == 18):
+	print(optimize_result.get_n_columns())
+	if (optimize_result.get_n_columns() == 24):
 		print("{} has been already migrated.".format(filename))
 		continue
 
 	print('migrating {}'.format(filename))
-	assert(optimize_result.get_n_columns() == 17)
-	optimize_result.add_column(13, 1.0)
-	assert(optimize_result.get_n_columns() == 18)
+	assert(optimize_result.get_n_columns() == 23)
+	optimize_result.add_column(14, -1)
+	assert(optimize_result.get_n_columns() == 24)
 	optimize_result.save(filename)
 
 
