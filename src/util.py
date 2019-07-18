@@ -117,6 +117,10 @@ def get_home_dir():
 def get_stock_data_dir():
 	return os.path.join(get_home_dir(), 'stock-data')
 
+def get_npy_filename(stock_name, stock_id, ema, beta):
+	preprocess_data_dir = get_preprocessed_data_dir()
+	return os.path.join(preprocess_data_dir, "{}_{}_ema{}_beta{}.npy".format(stock_name, stock_id, ema, beta))
+
 def get_preprocessed_data_dir():
 	return os.path.join(get_home_dir(), 'preprocessed-data')
 
