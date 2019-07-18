@@ -144,8 +144,8 @@ for stock_name in stock_name_tuple:
         df_merged = df_merged.append(df)
     
     
-    for ema in (20,):
-        for beta in (99,):
+    for ema in (20, 10, 1):
+        for beta in (99,98):
             print("Saving to files for stock id:{}, name:{} index:{} ema:{} beta:{}".format(stock_id, 
                 stock_name,
                 stock_index, 
