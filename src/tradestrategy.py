@@ -4,8 +4,10 @@ import GPy
 import GPyOpt
 import os
 import pickle
+import pandas as pd
 from optimizeresult import OptimizeResult
 from util import remove_centralized
+
 
 
 class TradeStrategyFactory:
@@ -13,7 +15,8 @@ class TradeStrategyFactory:
                  {'name': 'sell_threshold', 'type': 'discrete', 'domain': tuple(np.around(np.arange(-0.005, 0.0, 0.0001),4))},
                  {'name': 'stop_loss', 'type': 'discrete', 'domain': tuple(np.around(np.arange(-0.01,-0.003, 0.001),3))},
                  {'name': 'stop_gain', 'type': 'discrete', 'domain': tuple(np.around(np.arange(0.002, 0.02,0.001),3))},
-                 {'name': 'skip_at_beginning', 'type': 'discrete', 'domain': (0,5, 10, 20)}
+                 {'name': 'skip_at_beginning', 'type': 'discrete', 'domain': (0,5, 10, 20)},
+                 {'name': 'value_ma', 'type': 'discrete', 'domain': (1,3,5,10)}
          ]
     def __init__(self, cache_file=None,  n_max_trades_per_day=2, slippage=0, courtage=0):
         self.n_max_trades_per_day = n_max_trades_per_day
@@ -110,6 +113,7 @@ class TradeStrategy:
         self.stop_loss = X_list[2]
         self.stop_gain = X_list[3]
         self.skip_at_beginning = X_list[4]
+        self.value_ma = X_list[5]
         self.slippage = slippage
         self.courtage = courtage
         self.n_max_trades_per_day = n_max_trades_per_day
@@ -117,18 +121,22 @@ class TradeStrategy:
 
     def get_parameter_str(self):
         s = "buy_threshold:{} sell_threshold:{} stop_loss:{} \
-            stop_gain:{}, skip_at_beginning: {}".format(self.buy_threshold,
+            stop_gain:{}, skip_at_beginning: {}, value_ma: {}".format(self.buy_threshold,
                                   self.sell_threshold,
                                   self.stop_loss,
                                   self.stop_gain,
-                                  self.skip_at_beginning)
+                                  self.skip_at_beginning,
+                                  self.value_ma)
         return s
 
     def to_list(self):
-        return [self.buy_threshold, self.sell_threshold, self.stop_loss, self.stop_gain, self.skip_at_beginning]
+        return [self.buy_threshold, self.sell_threshold, 
+        self.stop_loss, self.stop_gain, self.skip_at_beginning, 
+        self.value_ma]
 
     def get_features(self):
-        return (self.buy_threshold, self.sell_threshold, self.stop_loss, self.stop_gain, self.skip_at_beginning)
+        return (self.buy_threshold, self.sell_threshold, self.stop_loss, 
+            self.stop_gain, self.skip_at_beginning, self.value_ma)
 
     def get_profit(self,  input_data, verbose=False):
         # the centralized part must be removed
@@ -147,6 +155,7 @@ class TradeStrategy:
         stop_loss = X_list[2]
         stop_gain = X_list[3]
         skip_at_beginning = int(X_list[4])
+        value_ma = int(X_list[5])
 
         tot_profit = 1
         tot_stock_profit = 1
@@ -176,6 +185,12 @@ class TradeStrategy:
             daily_data = input_data[day_idx]
             hold_steps = 0
             hit_stop = False
+
+            # do ma on values
+            if value_ma != 1:
+                values = pd.Series(daily_data[:,1])
+                values_ma = values.ewm(span=value_ma, adjust=False).mean()
+                daily_data[:,1] = values_ma.values
 
             for step in range(len(daily_data)):
                 time = daily_data[step][0]
