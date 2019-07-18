@@ -107,8 +107,8 @@ class HmmModel:
     strategy_data_input = np.stack((timestamps, df_s_v['avg_values'].to_numpy().reshape(shape), prices), axis=2)
     strategy_data_input_no_central = remove_centralized(strategy_data_input)
     if strategy_X_list is None:
-      factory = TradeStrategyFactory(slippage=self.slippage)
-      strategy_model = trade_strategy.create_trade_strategies(strategy_data_input_no_central, iter=1)
+      strategy_factory = TradeStrategyFactory(slippage=self.slippage)
+      strategy_model = strategy_factory.create_trade_strategies(strategy_data_input_no_central, iter=1)
     else:
     	strategy_model = TradeStrategy(strategy_X_list, slippage=self.slippage)
 
