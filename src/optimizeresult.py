@@ -16,7 +16,7 @@ class OptimizeResult:
 			return 0
 		else:
 			cached_y, index = self.find_result(X)
-			if cached_y == None:
+			if cached_y is None:
 				self.data = np.insert(self.data, index, new_data, axis=0)
 			return index
 
