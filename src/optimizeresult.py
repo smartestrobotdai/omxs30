@@ -1,6 +1,7 @@
 import numpy as np
 import os.path
 import pandas as pd
+from util import md5
 
 class OptimizeResult:
 	def __init__(self, result_column_index=-1):
@@ -77,7 +78,9 @@ class OptimizeResult:
 
 		by = self.get_result_column_index()
 		df = pd.DataFrame(self.data)
+
 		df = df.sort_values(by=by,  ascending=False)
+		df['md5'] = df.apply(lambda x: md5(str(tuple(x))), axis=1)
 		#temporaly display all columns
 		with pd.option_context('display.max_rows', None):
 			print(df.head(n_top_rows))

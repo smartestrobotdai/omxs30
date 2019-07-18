@@ -56,7 +56,7 @@ def md5(in_str):
 	m = hashlib.sha256()
 	b = bytearray(in_str, 'utf-8')
 	m.update(b)
-	return m.hexdigest()
+	return m.hexdigest()[:16]
 
 
 def remove_centralized(data):
