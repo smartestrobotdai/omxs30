@@ -18,10 +18,6 @@ number = 5
 if len(sys.argv) == 5:
   number = int(sys.argv[4])
 
-
-
-
-
 cache_file = get_cache_filename(stock_name, start_day_index, end_day_index)
 worm_results = OptimizeResult(-1)
 worm_results.load(cache_file)
