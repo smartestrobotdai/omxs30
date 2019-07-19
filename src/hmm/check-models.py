@@ -2,7 +2,7 @@ import sys
 import os.path
 import numpy as np
 sys.path.append("../")
-from util import get_stock_id_by_name, get_npy_filename
+from util import *
 from optimizeresult import OptimizeResult
 from hmm_util import get_cache_filename
 
@@ -19,24 +19,25 @@ number = 5
 if len(sys.argv) == 5:
   number = int(sys.argv[4])
 
-# find out the total raise.
-npy_filename = get_npy_filename(stock_name, stock_id, 1, 99)
-data = np.load(npy_filename, allow_pickle=True)
-start_price = data[0,0,6]
-end_price = data[-1,-1,6]
-# column 6 is the price!
-n_days = data.shape[0]
-profit = 1
-for d in range(n_days):
-	price = data[d,:,6]
-	#print("start: {} - end: {}".format(price[0], price[-2]))
-	rate = price[-2] / price[0]
-	profit = profit * rate
+profit_overnight = get_stock_change_rate(stock_name, 
+	start_day_index, 
+	end_day_index,
+	overnight=True)
+
+profit = get_stock_change_rate(stock_name, 
+	start_day_index, 
+	end_day_index,
+	overnight=False)
+
 
 print("Stock profit w/o overnight: {}".format(profit))
-print("Stock profit w overnight: {}".format(end_price/start_price))
+print("Stock profit w overnight: {}".format(profit_overnight))
 
 cache_file = get_cache_filename(stock_name, start_day_index, end_day_index)
+if not os.path.isfile(cache_file):
+	print("{} does not exist.".format(cache_file))
+	os.exit(0)
+
 worm_results = OptimizeResult(-1)
 worm_results.load(cache_file)
 print("Top 10 Worms in {} results for {}: swarm: {}-{}".format(worm_results.get_size(), 

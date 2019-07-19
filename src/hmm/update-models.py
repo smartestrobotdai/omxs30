@@ -29,13 +29,28 @@ for i in range(len(top_worms)):
 	features = top_worms[i,:6]
 	strategy_features = top_worms[i,6:12]
 	md5 = top_worms[i,-1]
-
-	hmm_model = HmmModel(stock_name, start_day_index, end_day_index)
-	print("Updating model: {}".format(features))
-	total_profit = hmm_model.train(features, strategy_features)
-
 	model_path = get_model_path(stock_name, start_day_index, end_day_index)
 	save_path = os.path.join(model_path, md5)
-	hmm_model.save(save_path)
+	hmm_model_filename = os.path.join(save_path, "hmm_model.pkl")
+	hmm_model = None
+	if os.path.isfile(hmm_model_filename):
+		print("file: {} exists, load it.".format(hmm_model_filename))
+		with open(hmm_model_filename, "rb") as file: 
+			hmm_model = pickle.load(file)
+
+	else:
+		print("file: {} does not exists, generate it.".format(hmm_model_filename))
+		hmm_model = HmmModel(stock_name)
+		print("Updating model: {}".format(features))
+		total_profit = hmm_model.train(features, start_day_index, end_day_index, strategy_features)
+		print("Model trained, total profit: {}".format(total_profit))
+		hmm_model.save(save_path)
 
 	# TODO: test the model 
+	test_start_day_index = end_day_index
+	total_profit = hmm_model.test(test_start_day_index)
+
+	stock_profit_overnight = get_stock_change_rate(stock_name, test_start_day_index, overnight=True)
+	stock_profit = get_stock_change_rate(stock_name, test_start_day_index, overnight=False)
+	print("Stock profit w/o overnight: {}".format(stock_profit))
+	print("Stock profit overnight: {}".format(stock_profit_overnight))

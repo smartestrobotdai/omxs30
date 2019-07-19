@@ -26,8 +26,8 @@ def opt_func_base(stock_name, start_day_index, end_day_index, X_list):
 	    print("cannot find file cache:{}, will create new cache.".format(cache_filename))
 	print("Checking: {}".format(X_list))
 
-	hmm_model = HmmModel(stock_name, start_day_index, end_day_index)
-	total_profit = hmm_model.train(X_list)
+	hmm_model = HmmModel(stock_name)
+	total_profit = hmm_model.train(X_list, start_day_index, end_day_index)
 	
 	if total_profit == -1:
 		print("Training failed.")
