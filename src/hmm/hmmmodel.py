@@ -21,7 +21,7 @@ class HmmModel:
     self.remodel = None
     self.strategy_model = None
     self.scaler = None
-    self.value_table = None
+    self.np_value_table = None
 
   def prepare_data(self):
     n_components = self.n_components
@@ -100,9 +100,17 @@ class HmmModel:
     states_values = np.stack((states, values), axis=1)
 
     df_s_v = pd.DataFrame(states_values, columns=['state','value']).fillna(0)
-    value_table = df_s_v.groupby(['state']).mean().to_numpy()
+    value_table = df_s_v.groupby(['state']).mean()
 
-    df_s_v['avg_values'] = df_s_v['state'].apply(lambda x: value_table[x])
+    for i in range(n_components):
+      if i not in value_table.index:
+        value_table.loc[i] = 0
+
+    print("Value Table:")
+    print(value_table)
+    np_value_table = value_table.to_numpy()
+
+    df_s_v['avg_values'] = df_s_v['state'].apply(lambda x: np_value_table[x])
     shape = timestamps.shape
     strategy_data_input = np.stack((timestamps, df_s_v['avg_values'].to_numpy().reshape(shape), prices), axis=2)
     strategy_data_input_no_central = remove_centralized(strategy_data_input)
@@ -117,7 +125,7 @@ class HmmModel:
     self.remodel = remodel
     self.strategy_model = strategy_model
     self.scaler = scaler
-    self.value_table = value_table
+    self.np_value_table = np_value_table
     return total_profit
 
   def get_strategy_features(self):
