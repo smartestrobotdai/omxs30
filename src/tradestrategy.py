@@ -74,8 +74,10 @@ class TradeStrategyFactory:
 
         self.n_iter += 1
         cached_result, index = self.optimize_result.find_result(X_list)
-        trade_strategy = TradeStrategy(X_list, self.n_max_trades_per_day, 
-            self.slippage, self.courtage)
+        trade_strategy = TradeStrategy(X_list, n_max_trades_per_day=self.n_max_trades_per_day, 
+            slippage=self.slippage, 
+            courtage=self.courtage)
+
         if cached_result is not None:
             print("find cached result: {} for {}".format(cached_result, 
                 trade_strategy.get_parameter_str()))
@@ -190,11 +192,13 @@ class TradeStrategy:
             if value_ma != 1:
                 values = pd.Series(daily_data[:,1])
                 values_ma = values.ewm(span=value_ma, adjust=False).mean()
-                daily_data[:,1] = values_ma.values
-
+                values_ma = values_ma.values
+            else:
+                values_ma = daily_data[:,1]
+                
             for step in range(len(daily_data)):
                 time = daily_data[step][0]
-                value = daily_data[step][1]
+                value = values_ma[step]
                 price = daily_data[step][2]
                 change_rate = stock_change_rate[day_idx][step]
                 if state == 0 and time.time().hour >= 9 and \
