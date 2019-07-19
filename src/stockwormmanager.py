@@ -153,8 +153,8 @@ class StockWormManager:
 
         assert(len(top_worms) == n_number)
         for i in range(n_number):
-          features = top_worms[i, :14]
-          strategy_features = top_worms[i, 14:19]
+          features = top_worms[i, :15]
+          strategy_features = top_worms[i, 15:20]
           model_save_path = self.get_model_save_path(start_day_index, end_day_index, features)
           new_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, model_save_path)
           if os.path.isdir(model_save_path) and new_worm.load() == True:
