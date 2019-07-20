@@ -49,6 +49,7 @@ for i in range(len(top_worms)):
 	# TODO: test the model 
 	test_start_day_index = end_day_index
 	total_profit = hmm_model.test(test_start_day_index)
+	hmm_model.save(save_path)
 
 	stock_profit_overnight = get_stock_change_rate(stock_name, test_start_day_index, overnight=True)
 	stock_profit = get_stock_change_rate(stock_name, test_start_day_index, overnight=False)
