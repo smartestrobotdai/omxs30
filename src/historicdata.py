@@ -119,7 +119,7 @@ class HistoricData:
     plt.subplot(3, 1, 1)
     plt.plot(x,stock,label='stock')
     plt.plot(x,asset,label='asset')
-    plt.legend()
+    #plt.legend()
     plt.gcf().autofmt_xdate()
     plt.grid()
 
@@ -155,6 +155,10 @@ class HistoricData:
 
     plt.subplot(3, 1, 3)
     plt.plot(x, values_ma, label='predicted')
+
+    if value_ma != 1:
+      plt.plot(x, predicted_values, label='predicted')
+
     plt.plot(x, buy_threshold, label='buy')
     plt.plot(x, sell_threshold, label='sell')
     #plt.legend()
