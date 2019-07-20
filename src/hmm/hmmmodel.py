@@ -119,7 +119,7 @@ class HmmModel:
 
     if strategy_X_list is None:
       strategy_factory = TradeStrategyFactory(slippage=self.slippage)
-      strategy_model = strategy_factory.create_trade_strategies(strategy_data_input_no_central, iter=1)
+      strategy_model = strategy_factory.create_trade_strategies(strategy_data_input_no_central, iter=2)
     else:
       print("build strategy model: {}".format(strategy_X_list))
       strategy_model = TradeStrategy(strategy_X_list, slippage=self.slippage)
