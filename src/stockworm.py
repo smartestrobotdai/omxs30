@@ -16,13 +16,15 @@ import matplotlib.dates as dates
 from ipywidgets import interact
 import ipywidgets as widgets
 
+from historicdata import HistoricData
+
 # historic_data format:
 # shape(days, steps, columns)
 # columns: time, predicted_value, price, stock_change_rate, asset_change_rate, action, real_value
 
 
 class StockWorm:
-    def __init__(self, stock_name, stock_id, input_data_path, save_path):
+    def __init__(self, stock_name, stock_id, input_data_path, save_path=None):
         self.stock_name = stock_name
         self.stock_id = stock_id 
         self.input_data_path = input_data_path
@@ -95,7 +97,11 @@ class StockWorm:
         total_profit, profit_daily, results = strategy_model.get_profit(strategy_data_input)
 
         self.strategy_model = strategy_model
-        self.historic_data = np.concatenate((strategy_data_input, results, real_values), axis=2)
+
+        data = np.concatenate((strategy_data_input, results, real_values), axis=2)
+
+        self.historic_data = HistoricData(start_day_index, end_day_index)
+        self.historic_data.set_training_data(data)
 
         return total_profit, profit_daily, errors_daily
     
@@ -129,12 +135,12 @@ class StockWorm:
             total_profit, profit_daily, change_rate = self.strategy_model.get_profit(strategy_data_input, verbose)
 
 
-            historic_data = np.concatenate((strategy_data_input, change_rate, real_values), axis=2)
+            data = np.concatenate((strategy_data_input, change_rate, real_values), axis=2)
             assert(self.historic_data is not None)
-            n_data_appended = self.append_historic_data(historic_data)
+            n_data_appended = self.historic_data.append(data)
 
         
-        _,_,testing_total_profit, testing_profit_list, _,_,_,_= self.get_historic_metrics()
+        _,_,testing_total_profit, testing_profit_list, _,_,_,_= self.historic_data.get_metrics()
         return  testing_total_profit, testing_profit_list, n_data_appended
 
     def start_realtime_prediction(self, end_date=None):
@@ -346,8 +352,8 @@ class StockWorm:
             pickle.dump(self.strategy_model, f, pickle.HIGHEST_PROTOCOL)
         
         filename = self.get_historic_data_filename(path, self.learning_end_date)
-        np.save(filename, self.historic_data)
-    
+        with open(filename, 'wb') as f:
+            pickle.dump(self.historic_data, f, pickle.HIGHEST_PROTOCOL)
 
 
     def load(self, load_date=None):
@@ -374,200 +380,72 @@ class StockWorm:
 
         # recover the learning_end_date
         self.learning_end_date = load_date
-        filename = self.get_historic_data_filename(path, load_date)
-        self.historic_data = np.load(filename, allow_pickle=True)
+        with open(self.get_historic_data_filename(path, load_date), 'rb') as f:
+            self.historic_data = pickle.load(f)
         return True
 
-    def get_daily_data(self):
-        stock_change_rate = self.historic_data[:,:,3]
-        asset_change_rate = self.historic_data[:,:,4]
-        daily_stock_change_rate = np.prod(stock_change_rate+1, axis=1) - 1
-        daily_asset_change_rate = np.prod(asset_change_rate+1, axis=1) - 1
         date = self.historic_data[:,0,0]
         return np.stack((date, daily_stock_change_rate, daily_asset_change_rate), axis=1)
-
-    def get_historic_metrics(self):
-        assert(self.historic_data is not None)
-        data = self.get_daily_data()
-        training_data_length = self.get_training_data_len()
-        training_daily_profit = data[:training_data_length, 2]
-        training_stock_daily_profit = data[:training_data_length, 1]
-
-        testing_daily_profit = data[training_data_length:, 2]
-        testing_stock_daily_profit = data[training_data_length:, 1]
-
-        training_total_profit = np.prod(training_daily_profit+1)-1
-        training_stock_total_profit = np.prod(training_stock_daily_profit+1)-1
-
-        testing_total_profit = np.prod(testing_daily_profit+1)-1
-        testing_stock_total_profit = np.prod(testing_stock_daily_profit+1)-1
-
-        return training_total_profit, training_daily_profit, \
-                testing_total_profit, testing_daily_profit, \
-                training_stock_total_profit, training_stock_daily_profit, \
-                testing_stock_total_profit, testing_stock_daily_profit
-
-
-
-
-    def get_last_training_date(self):
-        data = self.get_daily_data()
-        training_data_length = self.get_training_data_len()
-        return timestamp2date(data[training_data_length-1,0])
-
-    def get_last_testing_date(self):
-        data = self.get_daily_data()
-        return timestamp2date(data[-1,0])
 
 
     def get_last_n_total_profit(self, data_arr, window=20):
         return np.prod(data_arr[-window:]+1)-1
 
     def report(self, window=20):
-        print("Save Path: %s" % self.save_path)
-        training_total_profit, training_daily_profit, \
-            testing_total_profit, testing_daily_profit, \
-            training_stock_total_profit, taining_stock_daily_profit, \
-            testing_stock_total_profit, testing_stock_daily_profit = self.get_historic_metrics()
+        pass
+        # print("Save Path: %s" % self.save_path)
+        # training_total_profit, training_daily_profit, \
+        #     testing_total_profit, testing_daily_profit, \
+        #     training_stock_total_profit, taining_stock_daily_profit, \
+        #     testing_stock_total_profit, testing_stock_daily_profit = self.historic_data.get_metrics()
 
-        print(taining_stock_daily_profit)
+        # print(taining_stock_daily_profit)
 
 
-        print("Last Training_Date: %s" % self.get_last_training_date())
-        print("Training Total Profit: %f" % training_total_profit)
-        print("Training Avg Profit: %f" % mean(training_daily_profit))
-        print("Training Profit Std %f" % stdev(training_daily_profit))
+        # print("Last Training_Date: %s" % self.historic_data.get_last_training_date())
+        # print("Training Total Profit: %f" % training_total_profit)
+        # print("Training Avg Profit: %f" % mean(training_daily_profit))
+        # print("Training Profit Std %f" % stdev(training_daily_profit))
 
-        last_n_training_total_profit = self.get_last_n_total_profit(training_daily_profit, window)
+        # last_n_training_total_profit = self.get_last_n_total_profit(training_daily_profit, window)
 
-        print("Training Last %d Days Profit: %f" % (window, last_n_training_total_profit))
-        print("Training Last %d Days Avg Profit: %f" % (window, mean(training_daily_profit[-window:])))
-        print("Training Last %d Days Profit Std: %f" % (window, stdev(training_daily_profit[-window:])))
+        # print("Training Last %d Days Profit: %f" % (window, last_n_training_total_profit))
+        # print("Training Last %d Days Avg Profit: %f" % (window, mean(training_daily_profit[-window:])))
+        # print("Training Last %d Days Profit Std: %f" % (window, stdev(training_daily_profit[-window:])))
 
-        last_n_training_total_profit_stock = self.get_last_n_total_profit(taining_stock_daily_profit, window)
-        print("Training Last %d Days Stock: %f" % (window, last_n_training_total_profit_stock))
-        print("Training Last %d Days Avg Stock: %f" % (window, mean(taining_stock_daily_profit[-window:])))
-        print("Training Last %d Days Stock Std: %f" % (window, stdev(taining_stock_daily_profit[-window:])))
+        # last_n_training_total_profit_stock = self.get_last_n_total_profit(taining_stock_daily_profit, window)
+        # print("Training Last %d Days Stock: %f" % (window, last_n_training_total_profit_stock))
+        # print("Training Last %d Days Avg Stock: %f" % (window, mean(taining_stock_daily_profit[-window:])))
+        # print("Training Last %d Days Stock Std: %f" % (window, stdev(taining_stock_daily_profit[-window:])))
 
-        if len(testing_daily_profit) == 0:
-            return
+        # if len(testing_daily_profit) == 0:
+        #     return
 
-        print("Last Testing Date: %s" % self.get_last_testing_date())
-        print("Testing Total Profit: %f" % testing_total_profit)
-        print("Testing Avg Profit: %f" % mean(testing_daily_profit))
-        print("Testing Profit Std %f" % stdev(testing_daily_profit))
+        # print("Last Testing Date: %s" % self.get_last_testing_date())
+        # print("Testing Total Profit: %f" % testing_total_profit)
+        # print("Testing Avg Profit: %f" % mean(testing_daily_profit))
+        # print("Testing Profit Std %f" % stdev(testing_daily_profit))
 
-        print("Testing Total Stock: %f" % testing_stock_total_profit)
-        print("Testing Avg Stock: %f" % mean(testing_stock_daily_profit))
-        print("Testing Stock Std %f" % stdev(testing_stock_daily_profit))
+        # print("Testing Total Stock: %f" % testing_stock_total_profit)
+        # print("Testing Avg Stock: %f" % mean(testing_stock_daily_profit))
+        # print("Testing Stock Std %f" % stdev(testing_stock_daily_profit))
 
-        overall_profit = np.concatenate((training_daily_profit, testing_daily_profit), axis=0)
-        print("Overall Avg Profit: %f" % mean(overall_profit))
-        print("Overall Profit Std: %f" % stdev(overall_profit))
+        # overall_profit = np.concatenate((training_daily_profit, testing_daily_profit), axis=0)
+        # print("Overall Avg Profit: %f" % mean(overall_profit))
+        # print("Overall Profit Std: %f" % stdev(overall_profit))
 
     def get_training_data_len(self):
         return self.data_manipulator.get_training_data_len()
 
     def plot(self):
         assert(self.historic_data is not None)
-        training_data_length = self.get_training_data_len()
-        daily_data = self.get_daily_data()
-        print("preparing plotting")
-        print(daily_data.shape)
-        x1 = daily_data[:training_data_length,0]
-
-        stock_training = np.cumprod(daily_data[:training_data_length,1]+1)
-        asset_training = np.cumprod(daily_data[:training_data_length,2]+1)
-
-        plt.subplot(2, 1, 1)
-        plt.plot(x1,stock_training)
-        plt.legend("stock")
-        plt.plot(x1,asset_training)
-        plt.legend("asset")
-
-        plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%m-%d'))
-        #plt.gca().xaxis.set_major_locator(dates.DateLocator())
-        
-        plt.gcf().autofmt_xdate()
-        plt.grid()
-        x2 = daily_data[training_data_length:, 0]
-        stock_testing = np.cumprod(daily_data[training_data_length:, 1]+1)
-        asset_testing = np.cumprod(daily_data[training_data_length:, 2]+1)
-        plt.subplot(2, 1, 2)
-        plt.plot(x2,stock_testing, label='stock_testing')
-        plt.legend("stock")
-        plt.plot(x2,asset_testing, label='asset_testing')
-        plt.legend("asset")
-        plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%m-%d'))
-        #plt.gca().xaxis.set_major_locator(dates.DateLocator())
-        plt.gcf().autofmt_xdate()
-        plt.grid()
-        plt.show()
+        self.historic_data.plot()
 
     def get_historic_data(self):
         return self.historic_data
 
-    def plot_day_index(self, day_index):
-
-        # the stock price change rate
-        stock = np.cumprod(self.historic_data[day_index,:,3]+1)
-        # the asset change rate
-        asset = np.cumprod(self.historic_data[day_index,:,4]+1)
-        # the date
-        date = timestamp2date(self.historic_data[day_index, 0, 0])
-        day_index_all = self.data_manipulator.date_2_day_index(date)
-        print("Date: {}, Day_index:{}, ".format(date, day_index_all))
-        # timestamp
-        x = self.historic_data[day_index, :, 0]
-
-        plt.subplot(3, 1, 1)
-        plt.plot(x,stock,label='stock')
-        #plt.legend()
-        plt.plot(x,asset,label='asset')
-        #plt.legend()
-        plt.gcf().autofmt_xdate()
-        plt.grid()
-
-
-        # get the thresholds, 
-        strategy_features = self.strategy_model.get_features()
-        buy_threshold = np.array([strategy_features[0]] * len(x))
-        sell_threshold = np.array([strategy_features[1]] * len(x))
-
-        # the real values
-        real_values = self.historic_data[day_index,:,6]
-        # the predicted values
-
-
-
-        plt.subplot(3, 1, 2)
-        plt.plot(x, real_values,label='real')
-        plt.plot(x, buy_threshold, label='buy')
-        plt.plot(x, sell_threshold, label='sell')
-        #plt.legend()
-        plt.gcf().autofmt_xdate()
-        plt.grid()
-
-        predicted_values = self.historic_data[day_index,:,1]
-        plt.subplot(3, 1, 3)
-        plt.plot(x, predicted_values, label='predicted')
-        plt.plot(x, buy_threshold, label='buy')
-        plt.plot(x, sell_threshold, label='sell')
-        #plt.legend()
-        plt.gcf().autofmt_xdate()
-        plt.grid()
-        plt.show()
-
-    def plot_days(self):
-        data_len = self.historic_data.shape[0]
-        interact(self.plot_day_index, day_index=widgets.IntSlider(min=0, max=data_len-1, value=data_len-1))
-
-    def plot_date(self, date):
-        day_index_history = self.data_manipulator.get_historic_day_index(date)
-        day_index = self.data_manipulator.date_2_day_index(date)
-        print("Plotting date:{} day index in history: {}, day idnex:{}".format(date, day_index_history, day_index))
-        assert(day_index is not None)
-        self.plot_day_index(day_index)
+    def daily_plot(self):
+        self.historic_data.daily_plot(self.strategy_model)
 
     def get_values_by_date(self, date):
         day_index = self.data_manipulator.get_historic_day_index(date)

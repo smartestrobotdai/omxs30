@@ -106,8 +106,7 @@ class StockWormManager:
         if cached_result is not None:
             print("find from cache. skip...")
         else:
-            model_save_path = self.get_model_save_path(start_day, end_day, features)
-            stock_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, model_save_path)
+            stock_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path)
             if stock_worm.validate(features, start_day, end_day) == False:
               print("validate failed for worm: {}".format(self.get_parameter_str(features)))
               return np.array(-1).reshape((1,1))
@@ -146,38 +145,39 @@ class StockWormManager:
 
 
     def update_worms_from_cache(self, n_number, start_day_index, end_day_index):
-        optimize_result = OptimizeResult()
-        stockworm_cache_file = self.get_stockworm_cache_file(start_day_index, end_day_index)
-        optimize_result.load(stockworm_cache_file)
-        top_worms = optimize_result.get_best_results(n_number)
+      optimize_result = OptimizeResult()
+      stockworm_cache_file = self.get_stockworm_cache_file(start_day_index, end_day_index)
+      optimize_result.load(stockworm_cache_file)
+      top_worms = optimize_result.get_best_results(n_number)
 
-        assert(len(top_worms) == n_number)
-        for i in range(n_number):
-          features = top_worms[i, :15]
-          strategy_features = top_worms[i, 15:21]
-          model_save_path = self.get_model_save_path(start_day_index, end_day_index, features)
-          new_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, model_save_path)
-          if os.path.isdir(model_save_path) and new_worm.load() == True:
-              pass
-          else:
-            total_profit, profit_daily, errors_daily = new_worm.init(features, 
-              start_day_index, 
-              end_day_index,
-              strategy_features=strategy_features)
-            new_worm.save()
-            print("training finished for model {}, total_profit:{}".format(i, total_profit))
-          
-          new_worm.report()
+      assert(len(top_worms) == n_number)
+      for i in range(n_number):
+        features = top_worms[i, :15]
+        strategy_features = top_worms[i, 15:21]
+        md5 = top_worms[i, -1]
+        model_save_path = self.get_model_save_path(start_day_index, end_day_index, md5)
+        new_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, model_save_path)
+        if os.path.isdir(model_save_path) and new_worm.load() == True:
+            pass
+        else:
+          total_profit, profit_daily, errors_daily = new_worm.init(features, 
+            start_day_index, 
+            end_day_index,
+            strategy_features=strategy_features)
+          new_worm.save()
+          print("training finished for model {}, total_profit:{}".format(i, total_profit))
+        
+        new_worm.report()
 
-          testing_total_profit, testing_profit_daily, n_data_appended = new_worm.test()
-          if n_data_appended > 0:
-            print("testing finished for model {}, total_profit:{} in {} days, new data for {} days appended".format(i, 
-                testing_total_profit, len(testing_profit_daily),
-                n_data_appended))
-            new_worm.save()
+        testing_total_profit, testing_profit_daily, n_data_appended = new_worm.test()
+        if n_data_appended > 0:
+          print("testing finished for model {}, total_profit:{} in {} days, new data for {} days appended".format(i, 
+              testing_total_profit, len(testing_profit_daily),
+              n_data_appended))
+          new_worm.save()
 
-          new_worm.report()
-          self.worm_list.append(new_worm)
+        new_worm.report()
+        self.worm_list.append(new_worm)
 
     def report(self):
       assert(self.worm_list is not None)
@@ -185,13 +185,12 @@ class StockWormManager:
         print("Report for Worm No.{}".format(i+1))
         self.worm_list[i].report()
 
-    def get_model_save_path(self, start_day_index, end_day_index, features=None):
+    def get_model_save_path(self, start_day_index, end_day_index, md5=None):
       swarm_path = self.get_swarm_path(start_day_index, end_day_index)
-      if features is None:
+      if md5 is None:
         model_save_path = os.path.join(swarm_path, "models")
       else:
-        features_str = self.get_parameter_str(features)
-        model_save_path = os.path.join(swarm_path, "models", md5(features_str))
+        model_save_path = os.path.join(swarm_path, "models", md5)
       return model_save_path
 
     def load(self):

@@ -37,6 +37,35 @@ class HistoricData:
         self.data = np.concatenate((self.data, data), axis=0)
     return len(data)
 
+  def get_last_training_date(self):
+      data = self.get_daily_data()
+      training_data_length = self.get_training_data_len()
+      return timestamp2date(data[training_data_length-1,0])
+
+  def get_last_testing_date(self):
+    data = self.get_daily_data()
+    return timestamp2date(data[-1,0])
+
+  def get_metrics(self):
+    data = self.get_daily_data()
+    training_data_length = self.get_training_data_len()
+    training_daily_profit = data[:training_data_length, 2]
+    training_stock_daily_profit = data[:training_data_length, 1]
+
+    testing_daily_profit = data[training_data_length:, 2]
+    testing_stock_daily_profit = data[training_data_length:, 1]
+
+    training_total_profit = np.prod(training_daily_profit+1)-1
+    training_stock_total_profit = np.prod(training_stock_daily_profit+1)-1
+
+    testing_total_profit = np.prod(testing_daily_profit+1)-1
+    testing_stock_total_profit = np.prod(testing_stock_daily_profit+1)-1
+
+    return training_total_profit, training_daily_profit, \
+            testing_total_profit, testing_daily_profit, \
+            training_stock_total_profit, training_stock_daily_profit, \
+            testing_stock_total_profit, testing_stock_daily_profit
+
   def get_training_data(self):
     training_data_length = self.training_data_len
     return self.data[:training_data_length]
