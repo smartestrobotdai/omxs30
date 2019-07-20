@@ -11,10 +11,10 @@ from util import remove_centralized
 
 
 class TradeStrategyFactory:
-    mixed_domain = [{'name': 'buy_threshold', 'type': 'discrete', 'domain': tuple(np.around(np.arange(0.0, 0.005,0.0001),4))},
-                 {'name': 'sell_threshold', 'type': 'discrete', 'domain': tuple(np.around(np.arange(-0.005, 0.0, 0.0001),4))},
-                 {'name': 'stop_loss', 'type': 'discrete', 'domain': tuple(np.around(np.arange(-0.01,-0.003, 0.001),3))},
-                 {'name': 'stop_gain', 'type': 'discrete', 'domain': tuple(np.around(np.arange(0.002, 0.02,0.001),3))},
+    mixed_domain = [{'name': 'buy_threshold', 'type': 'continuous', 'domain': (0, 0.005)},
+                 {'name': 'sell_threshold', 'type': 'continuous', 'domain': (-0.005, 0)},
+                 {'name': 'stop_loss', 'type': 'continuous', 'domain': (-0.02, -0.003)},
+                 {'name': 'stop_gain', 'type': 'continuous', 'domain': (0.003, 0.02)},
                  {'name': 'skip_at_beginning', 'type': 'discrete', 'domain': (0,5, 10, 20)},
                  {'name': 'value_ma', 'type': 'discrete', 'domain': (3,5,10)}
          ]
