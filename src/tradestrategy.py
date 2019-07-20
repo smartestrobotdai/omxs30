@@ -18,7 +18,7 @@ class TradeStrategyFactory:
                  {'name': 'skip_at_beginning', 'type': 'discrete', 'domain': (0,5, 10, 20)},
                  {'name': 'value_ma', 'type': 'discrete', 'domain': (1,3,5,10)}
          ]
-    def __init__(self, cache_file=None,  n_max_trades_per_day=2, slippage=0, courtage=0):
+    def __init__(self, cache_file=None,  n_max_trades_per_day=4, slippage=0, courtage=0):
         self.n_max_trades_per_day = n_max_trades_per_day
         self.slippage = slippage
         self.courtage = courtage
@@ -109,7 +109,7 @@ def print_verbose_func(verbose, msg):
 
 
 class TradeStrategy:
-    def __init__(self, X_list, n_max_trades_per_day=2, slippage=0, courtage=0):
+    def __init__(self, X_list, n_max_trades_per_day=4, slippage=0, courtage=0):
         self.buy_threshold = X_list[0]
         self.sell_threshold = X_list[1]
         self.stop_loss = X_list[2]
@@ -195,7 +195,7 @@ class TradeStrategy:
                 values_ma = values_ma.values
             else:
                 values_ma = daily_data[:,1]
-                
+
             for step in range(len(daily_data)):
                 time = daily_data[step][0]
                 value = values_ma[step]
