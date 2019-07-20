@@ -109,7 +109,7 @@ class StockWormManager:
             model_save_path = self.get_model_save_path(start_day, end_day, features)
             stock_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, model_save_path)
             if stock_worm.validate(features, start_day, end_day) == False:
-              print("validate failed for worm: {}".format(self.get_parameter_str()))
+              print("validate failed for worm: {}".format(self.get_parameter_str(features)))
               return np.array(-1).reshape((1,1))
 
             total_profit, profit_daily, errors_daily = stock_worm.init(features, 
