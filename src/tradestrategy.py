@@ -16,7 +16,7 @@ class TradeStrategyFactory:
                  {'name': 'stop_loss', 'type': 'discrete', 'domain': tuple(np.around(np.arange(-0.01,-0.003, 0.001),3))},
                  {'name': 'stop_gain', 'type': 'discrete', 'domain': tuple(np.around(np.arange(0.002, 0.02,0.001),3))},
                  {'name': 'skip_at_beginning', 'type': 'discrete', 'domain': (0,5, 10, 20)},
-                 {'name': 'value_ma', 'type': 'discrete', 'domain': (1,3,5,10)}
+                 {'name': 'value_ma', 'type': 'discrete', 'domain': (3,5,10)}
          ]
     def __init__(self, cache_file=None,  n_max_trades_per_day=4, slippage=0, courtage=0):
         self.n_max_trades_per_day = n_max_trades_per_day
