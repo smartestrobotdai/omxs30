@@ -78,7 +78,8 @@ class HmmModel:
     self.end_day_index = end_day_index
 
     n_components = int(X_list[0])
-    input_data, values, timestamps, prices = self.prepare_data(start_day_index, end_day_index)
+    training_end_day_index = start_day_index + int((end_day_index - start_day_index) * 0.7)
+    input_data, values, timestamps, prices = self.prepare_data(start_day_index, training_end_day_index)
     
     scaler = MinMaxScaler()
     shape = input_data.shape
@@ -98,7 +99,7 @@ class HmmModel:
       print("prediction failed: {}".format(ve))
     
     if states is None:
-      return np.array(-1).reshape((1,1))
+      return np.array(-1).reshape((1,1)), np.array(-1).reshape((1,1))
     
     values_flatten = values.flatten()
     states_values = np.stack((states, values_flatten), axis=1)
@@ -111,92 +112,50 @@ class HmmModel:
         value_table.loc[i] = 0
 
     np_value_table = value_table.to_numpy().flatten()
-    df_s_v['avg_values'] = df_s_v['state'].apply(lambda x: np_value_table[x])
 
-    shape = timestamps.shape
-    strategy_data_input = np.stack((timestamps, df_s_v['avg_values'].to_numpy().reshape(shape), prices), axis=2)
-    strategy_data_input_no_central = remove_centralized(strategy_data_input)
+
+    strategy_input_data, real_values = self.prepare_strategy_input_data(remodel, scaler, 
+      np_value_table, training_end_day_index, end_day_index)
 
     if strategy_X_list is None:
       strategy_factory = TradeStrategyFactory(slippage=self.slippage)
-      strategy_model = strategy_factory.create_trade_strategies(strategy_data_input_no_central, iter=2)
+      strategy_model = strategy_factory.create_trade_strategies(strategy_input_data, iter=2)
     else:
       print("build strategy model: {}".format(strategy_X_list))
       strategy_model = TradeStrategy(strategy_X_list, slippage=self.slippage)
 
-    total_profit, profit_daily, training_results = strategy_model.get_profit(strategy_data_input_no_central)
-    print("training finished: total_profit: {}, profit_daily: {}".format(total_profit, profit_daily))
+    total_profit, profit_daily, training_results = strategy_model.get_profit(strategy_input_data)
+
+    profit_daily_avg = profit_daily.mean()
+    print("training finished: total_profit: {}, profit_daily: {}".format(total_profit, profit_daily_avg))
     self.remodel = remodel
     self.strategy_model = strategy_model
     self.scaler = scaler
     self.np_value_table = np_value_table
     self.historic_data = HistoricData(start_day_index, end_day_index)
-    print(strategy_data_input.shape)
+    print(strategy_input_data.shape)
     print(training_results.shape)
     print(values.shape)
-    historic_data = np.concatenate((strategy_data_input_no_central, 
-        training_results, 
-        remove_centralized(values[:,:,np.newaxis])), axis=2)
+    historic_data = np.concatenate((strategy_input_data, 
+      training_results,
+      remove_centralized(real_values[:,:,np.newaxis])), axis=2)
 
     print("historic data shape: {}".format(historic_data.shape))
     self.historic_data.set_training_data(historic_data)
-    return total_profit
+    return total_profit, profit_daily_avg
 
-  def predict_daily(self, daily_input, timestamps, prices):
-    steps = daily_input.shape[0]
-    states = np.zeros((steps))
-    remodel = self.remodel
-    # states = remodel.predict(daily_input)
-    for step_idx in range(steps):
-     states_tmp = remodel.predict(daily_input[:step_idx+1])
-     states[step_idx] = states_tmp[-1]
-
-    # transfer to value
-    values = self.get_values_by_states(states)
-
-    # build strategy model input data
-    strategy_input = np.stack((timestamps, values, prices), axis=1).reshape(1, steps, 3)
-    strategy_data_input_no_central = remove_centralized(strategy_input)
-    strategy_model = self.strategy_model
-    total_profit, profit_daily, results = strategy_model.get_profit(strategy_data_input_no_central)
-    return total_profit
-
-
-
-  def test(self, test_start_day_index, test_end_day_index=None):
-    scaler = self.scaler
-    np_value_table = self.np_value_table
-    strategy_model = self.strategy_model
-
-    input_data, real_values, timestamps, prices = self.prepare_data(test_start_day_index, test_end_day_index)
-
+  def prepare_strategy_input_data(self, remodel, scaler, 
+      np_value_table, start_day_index, end_day_index=None):
+    input_data, real_values, timestamps, prices = self.prepare_data(start_day_index, end_day_index)
     shape = input_data.shape
     scaled = scaler.transform(input_data.reshape((shape[0]*shape[1],shape[2]))).reshape(shape)
-    # profit = 1
-    # for day_index in range(shape[0]):
-    #   daily_profit = self.predict_daily(scaled[day_index], timestamps[day_index], prices[day_index])
-    #   profit = profit * (daily_profit + 1)
-    #   print("day: {} finished, profit: {}".format(day_index, daily_profit))
-    # print("total_profit: {}".format(profit))
 
-    self.test2(scaled, timestamps, prices, real_values)
-
-  def get_values_by_states(self, states):
-    np_value_table = self.np_value_table
-    state_2_value_func = np.vectorize(lambda x: np_value_table[int(x)])
-    return state_2_value_func(states)
-
-
-  def test2(self, data_input, timestamps, prices, real_values):
-    shape = data_input.shape
-    print(shape)
     n_days = shape[0]
-    steps = shape[1]
-    states = np.zeros((shape[0], shape[1]))
+    n_steps = shape[1]
 
-    remodel = self.remodel
-    for step_idx in range(steps):
-      states_tmp = remodel.predict(data_input[:, :step_idx+1].reshape(shape[0]*(step_idx+1), shape[2]), 
+    states = np.zeros((n_days, n_steps))
+    for step_idx in range(n_steps):
+      states_tmp = remodel.predict(scaled[:, :step_idx+1].reshape(shape[0]*(step_idx+1), shape[2]), 
         lengths=[step_idx+1]*n_days)
 
       states_tmp_reshaped = states_tmp.reshape((n_days, step_idx+1))
@@ -205,9 +164,14 @@ class HmmModel:
     print("states.shape")
     print(states.shape)
 
-    values = self.get_values_by_states(states)
+    values = self.get_values_by_states(states, np_value_table)
     strategy_data_input = np.stack((timestamps, values, prices), axis=2)
     strategy_data_input_no_central = remove_centralized(strategy_data_input)
+    return strategy_data_input_no_central, real_values
+
+  def test(self, test_start_day_index, test_end_day_index=None):
+    strategy_data_input, real_values = self.prepare_strategy_input_data(self.remodel, self.scaler, 
+      self.np_value_table, test_start_day_index, test_end_day_index)
 
     strategy_model = self.strategy_model
 
@@ -225,6 +189,9 @@ class HmmModel:
     self.historic_data.append(historic_data)
     return total_profit
 
+  def get_values_by_states(self, states, np_value_table):
+    state_2_value_func = np.vectorize(lambda x: np_value_table[int(x)])
+    return state_2_value_func(states)
 
   def plot(self):
     self.historic_data.plot()
