@@ -27,7 +27,7 @@ def opt_func_base(stock_name, start_day_index, end_day_index, X_list):
 	print("Checking: {}".format(X_list))
 
 	hmm_model = HmmModel(stock_name)
-	total_profit = hmm_model.train(X_list, start_day_index, end_day_index)
+	total_profit, profit_daily_avg = hmm_model.train(X_list, start_day_index, end_day_index)
 	
 	if total_profit == -1:
 		print("Training failed.")
@@ -35,9 +35,9 @@ def opt_func_base(stock_name, start_day_index, end_day_index, X_list):
 
 	print("Finished, total_profit:{}".format(total_profit))
 	strategy_features = hmm_model.get_strategy_features()
-	optimize_result.insert_result(X_list, strategy_features + [total_profit])
+	optimize_result.insert_result(X_list, strategy_features + [total_profit, profit_daily_avg])
 	optimize_result.save(cache_filename)
-	return total_profit
+	return profit_daily_avg
 
 
 if len(sys.argv) < 4:
