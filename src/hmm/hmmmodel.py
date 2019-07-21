@@ -175,13 +175,13 @@ class HmmModel:
 
     strategy_model = self.strategy_model
 
-    total_profit, profit_daily, training_results = strategy_model.get_profit(strategy_data_input_no_central)
+    total_profit, profit_daily, training_results = strategy_model.get_profit(strategy_data_input)
     print("test finished: total_profit: {}, profit_daily: {}".format(total_profit, profit_daily))
 
     print(strategy_data_input.shape)
     print(training_results.shape)
     print(real_values.shape)
-    historic_data = np.concatenate((strategy_data_input_no_central, 
+    historic_data = np.concatenate((strategy_data_input, 
         training_results, 
         remove_centralized(real_values[:,:,np.newaxis])), axis=2)
 
