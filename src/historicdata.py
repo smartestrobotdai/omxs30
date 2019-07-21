@@ -145,7 +145,7 @@ class HistoricData:
     # timestamp
     x = self.data[day_index, :, 0]
 
-    plt.subplot(3, 1, 1)
+    plt.subplot(4, 1, 1)
     plt.plot(x,stock,label='stock')
     plt.plot(x,asset,label='asset')
     #plt.legend()
@@ -163,7 +163,7 @@ class HistoricData:
     # the predicted values
 
 
-    plt.subplot(3, 1, 2)
+    plt.subplot(4, 1, 2)
     plt.plot(x, real_values,label='real')
     plt.plot(x, buy_threshold, label='buy')
     plt.plot(x, sell_threshold, label='sell')
@@ -182,16 +182,25 @@ class HistoricData:
     else:
         values_ma = predicted_values
 
-    plt.subplot(3, 1, 3)
-    plt.plot(x, values_ma, label='predicted')
+    plt.subplot(4, 1, 3)
+    plt.plot(x, predicted_values, label='predicted')
 
-    if value_ma != 1:
-      plt.plot(x, predicted_values, label='predicted')
+    # if value_ma != 1:
+    #   plt.plot(x, predicted_values, label='predicted')
 
     plt.plot(x, buy_threshold, label='buy')
     plt.plot(x, sell_threshold, label='sell')
     #plt.legend()
     plt.gcf().autofmt_xdate()
     plt.grid()
+
+    plt.subplot(4, 1, 4)
+    plt.plot(x, values_ma, label='ma predicted')
+    plt.plot(x, buy_threshold, label='buy')
+    plt.plot(x, sell_threshold, label='sell')
+    #plt.legend()
+    plt.gcf().autofmt_xdate()
+    plt.grid()
+
     plt.show()
 
