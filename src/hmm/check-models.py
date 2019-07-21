@@ -14,18 +14,20 @@ stock_name = sys.argv[1]
 stock_id = get_stock_id_by_name(stock_name)
 start_day_index = int(sys.argv[2])
 end_day_index = int(sys.argv[3])
+dev_start_day_index = start_day_index + int((end_day_index-start_day_index)*0.7)
+
 number = 5
 
 if len(sys.argv) == 5:
   number = int(sys.argv[4])
 
 profit_overnight, mean_overnight = get_stock_change_rate(stock_name, 
-	start_day_index, 
+	dev_start_day_index, 
 	end_day_index,
 	overnight=True)
 
 profit, mean = get_stock_change_rate(stock_name, 
-	start_day_index, 
+	dev_start_day_index, 
 	end_day_index,
 	overnight=False)
 
