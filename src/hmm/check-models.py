@@ -19,19 +19,19 @@ number = 5
 if len(sys.argv) == 5:
   number = int(sys.argv[4])
 
-profit_overnight = get_stock_change_rate(stock_name, 
+profit_overnight, mean_overnight = get_stock_change_rate(stock_name, 
 	start_day_index, 
 	end_day_index,
 	overnight=True)
 
-profit = get_stock_change_rate(stock_name, 
+profit, mean = get_stock_change_rate(stock_name, 
 	start_day_index, 
 	end_day_index,
 	overnight=False)
 
 
-print("Stock profit w/o overnight: {}".format(profit))
-print("Stock profit w overnight: {}".format(profit_overnight))
+print("Stock profit w/o overnight: {}, mean: {}".format(profit, mean))
+print("Stock profit w overnight: {}, mean: {}".format(profit_overnight, mean_overnight))
 
 cache_file = get_cache_filename(stock_name, start_day_index, end_day_index)
 if not os.path.isfile(cache_file):

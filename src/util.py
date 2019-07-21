@@ -257,20 +257,23 @@ def get_stock_change_rate(stock_name, start_day_index, end_day_index=None, overn
 	if end_day_index is None:
 		end_day_index = len(data)
 	data = data[start_day_index:end_day_index]
-
-	start_price = data[0,0,6]
-
-	end_price = data[-1,-1,6]
-
+	n_days = len(data)
+	rate_list = []
 	if overnight == True:
-		return end_price/start_price
+		for d in range(1, n_days):
+			price = data[d,-1,6]
+			price_last = data[d-1,-1,6]
+			#print("start: {} - end: {}".format(price[0], price[-2]))
+			rate = price / price_last
+			rate_list.append(rate)
+	else:
+		for d in range(0, n_days):
+			price = data[d,-2,6]
+			price_last = data[d,6,6]
+			#print("start: {} - end: {}".format(price[0], price[-2]))
+			rate = price / price_last
+			rate_list.append(rate)
 
-	# column 6 is the price!
-	n_days = data.shape[0]
-	profit = 1
-	for d in range(n_days):
-		price = data[d,:,6]
-		#print("start: {} - end: {}".format(price[0], price[-2]))
-		rate = price[-2] / price[0]
-		profit = profit * rate
-	return profit
+	np_rate_list = np.array(rate_list)
+	total_profit = np.prod(np_rate_list)-1
+	return total_profit, (np_rate_list-1).mean()
