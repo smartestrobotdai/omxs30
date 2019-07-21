@@ -16,7 +16,7 @@ class TradeStrategyFactory:
                  {'name': 'stop_loss', 'type': 'continuous', 'domain': (-0.02, -0.003)},
                  {'name': 'stop_gain', 'type': 'continuous', 'domain': (0.003, 0.02)},
                  {'name': 'skip_at_beginning', 'type': 'discrete', 'domain': (0,5, 10, 20)},
-                 {'name': 'value_ma', 'type': 'discrete', 'domain': (3,5,10)}
+                 {'name': 'value_ma', 'type': 'discrete', 'domain': (1,3,5,10,20)}
          ]
     def __init__(self, cache_file=None,  n_max_trades_per_day=4, slippage=0, courtage=0):
         self.n_max_trades_per_day = n_max_trades_per_day
@@ -258,7 +258,7 @@ class TradeStrategy:
         
         tot_profit -= 1
         results = np.stack((stock_change_rate, asset_change_rate, actions), axis=2)
-        return tot_profit, n_tot_trades, daily_profit_list, results
+        return tot_profit, n_tot_trades, np.array(daily_profit_list), results
     
     def get_save_filename(self, path):
         return os.path.join(path, 'strategy_desc.pkl')
