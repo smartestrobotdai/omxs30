@@ -4,7 +4,10 @@ import pandas as pd
 import uuid
 import os.path
 import pickle
-from tradestrategy import TradeStrategyFactory, TradeStrategy
+from tradestrategy import TradeStrategy
+from tradestrategyfactory import TradeStrategyFactory
+
+
 from datamanipulator import DataManipulator
 from statefullstmmodel import StatefulLstmModel
 from util import *
@@ -24,13 +27,12 @@ from historicdata import HistoricData
 
 
 class StockWorm:
-    def __init__(self, stock_name, stock_id, input_data_path, save_path=None):
+    def __init__(self, stock_name, stock_id, input_data_path, save_path=None, is_future=False):
         self.stock_name = stock_name
         self.stock_id = stock_id 
         self.input_data_path = input_data_path
         self.save_path = save_path
-        
-
+        self.is_future = is_future
         self.last_learning_day_index = None
         self.learning_end_date = None
         self.historic_data = None
@@ -83,7 +85,7 @@ class StockWorm:
 
         strategy_data_input, real_values, errors_daily = self.test_model_base(start_day_index, end_day_index)
         if strategy_features is None:
-            strategy_factory = TradeStrategyFactory()
+            strategy_factory = TradeStrategyFactory(is_future=self.is_future)
             if is_test:
                 max_iter = 50
             else:
@@ -245,7 +247,7 @@ class StockWorm:
         
         self.learning_end_date = timestamp2date(timestamps[learning_end_seq][0])
         print("Running model finished, learning_end_seq: {} learning end date is:  {}".format(learning_end_seq, self.learning_end_date))
-
+        print(np_errors)
         errors_daily = np.mean(np_errors, axis=1)
         assert(len(errors_daily) == len(np_errors))
 

@@ -29,10 +29,9 @@ class StockWormManager:
       {'name': 'time_format', 'type': 'discrete', 'domain': (0,1,2)}, #1 for stepofday, 2 for stepofweek
       {'name': 'volume_input', 'type': 'discrete', 'domain': (0,1)},
       {'name': 'use_centralized_bid', 'type': 'discrete', 'domain': (0,1)},
-      {'name': 'split_daily_data', 'type': 'discrete', 'domain': (1,)},
+      {'name': 'split_daily_data', 'type': 'discrete', 'domain': (0,1)},
       {'name': 'is_stateful', 'type': 'discrete', 'domain': (0,1)},
       {'name': 'ref_stock_id', 'type': 'discrete', 'domain': (-1,992,3524,139301,160271)},
-
      ]
 
     mixed_domain_test = [{'name': 'n_neurons', 'type': 'discrete', 'domain': tuple(range(20,160,20))},
@@ -52,7 +51,24 @@ class StockWormManager:
       {'name': 'ref_stock_id', 'type': 'discrete', 'domain': (-1,992,3524,139301,160271)},
      ]
 
-    def __init__(self, stock_name, stock_data_path, npy_files_path):
+    mixed_domain_future = [{'name': 'n_neurons', 'type': 'discrete', 'domain': tuple(range(20,160,20))},
+      {'name': 'learning_rate', 'type': 'discrete', 'domain': (0.001,0.002,0.003,0.004)},
+      {'name': 'num_layers', 'type': 'discrete', 'domain': (1,2,3,4,5,6,7,8)},
+      {'name': 'rnn_type', 'type': 'discrete', 'domain': (0,1,2)},
+      {'name': 'learning_period', 'type': 'discrete', 'domain': (20,30,40,50)},
+      {'name': 'prediction_period', 'type': 'discrete', 'domain': (5,10,20)},
+      {'name': 'n_repeats', 'type': 'discrete', 'domain': (1,3)},
+      {'name': 'beta', 'type': 'discrete', 'domain': (99,98)},
+      {'name': 'ema', 'type': 'discrete', 'domain': (1,10,20)},
+      {'name': 'time_format', 'type': 'discrete', 'domain': (0,1,2)}, #1 for stepofday, 2 for stepofweek
+      {'name': 'volume_input', 'type': 'discrete', 'domain': (0,1)},
+      {'name': 'use_centralized_bid', 'type': 'discrete', 'domain': (1,)},
+      {'name': 'split_daily_data', 'type': 'discrete', 'domain': (0,)},
+      {'name': 'is_stateful', 'type': 'discrete', 'domain': (0,1)},
+      {'name': 'ref_stock_id', 'type': 'discrete', 'domain': (-1,)},
+     ]
+
+    def __init__(self, stock_name, stock_data_path, npy_files_path, is_future=False):
         self.stock_name = stock_name
 
         self.stock_id = get_stock_id_by_name(stock_name)
@@ -64,6 +80,7 @@ class StockWormManager:
         self.stock_data_path = stock_data_path
         self.npy_files_path = npy_files_path
         self.worm_list = []
+        self.is_future = is_future
 
     def search_worms(self, start_day_index, end_day_index, 
       max_iter=300, is_test=False):
@@ -72,8 +89,13 @@ class StockWormManager:
         else:
             mixed_domain = self.mixed_domain
 
+        if self.is_future == True:
+          mixed_domain = self.mixed_domain_future
+
         self.optimize_result = OptimizeResult()
         stock_worm_cache_file = self.get_stockworm_cache_file(start_day_index, end_day_index)
+        create_if_not_exist(os.path.dirname(stock_worm_cache_file))
+
 
         if os.path.isfile(stock_worm_cache_file):
             self.optimize_result.load(stock_worm_cache_file)
@@ -106,7 +128,7 @@ class StockWormManager:
         if cached_result is not None:
             print("find from cache. skip...")
         else:
-            stock_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path)
+            stock_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, is_future=self.is_future)
             if stock_worm.validate(features, start_day, end_day) == False:
               print("validate failed for worm: {}".format(self.get_parameter_str(features)))
               return np.array(-1).reshape((1,1))
@@ -122,6 +144,7 @@ class StockWormManager:
             strategy_features = list(stock_worm.get_strategy_features())
             self.optimize_result.insert_result(features, strategy_features + 
               [total_profit, n_days, error_mean, profit_mean])
+
 
             print("result saved to: {}".format(self.stock_worm_cache_file))
             self.optimize_result.save(self.stock_worm_cache_file)
