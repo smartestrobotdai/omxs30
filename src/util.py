@@ -37,6 +37,7 @@ stock_map = [(3966,"ABB"),
 	(1027,"TEL2-B"),
 	(5095,"TELIA"),
 	(366,"VOLV-B"),
+	(800001, "F-RB"),
 	(0,"OMXS30")
 ]
 
@@ -146,42 +147,8 @@ def create_if_not_exist(path):
     if not os.path.isdir(path):
         os.makedirs(path)
 
-# input: df - dataframe, must have timestamp, 
-def preprocessing_daily_data(df, last_close=None, calculate_values=True):
-	# if the data is not from 9:00:00, we must fix it.
-	open_today = df['last'].iloc[0]
-	# some data might miss, we must make a right join with full time series
-	# and do fillna.
-
-	df2 = df.set_index('timestamp')
-	ts = df2.index.min()
-	start_time_str = "{}-{:02d}-{:02d} 8:54:00".format(ts.year, ts.month, ts.day)
-	start_ts = pd.Timestamp(start_time_str, tz=ts.tz)
-	# periods=510 means from 9 to 17.29
-	dti = pd.date_range(start_ts , periods=516, freq='min').to_series(keep_tz=True).rename('time')
-	# remove from 17.25 - 17.28
-	#dti.drop(dti.tail(5).head(4).index, inplace=True)
-	df3 = df2.join(dti, how='right')
-	if last_close == None: # the first day, we must set the value from 8.55-8.59 as same as 9.00
-	    df3['last'].iloc[0] = df3['last'].iloc[6]
-	else:
-	    df3['last'].iloc[0] = last_close
-
-
-	# if the daily data is not started from 9:00:00, we must set it as the open price.
-	if df3['last'].iloc[6] != open_today:
-		df3['last'].iloc[6] = open_today
-
-
-	df3['last'].interpolate(method='linear', inplace=True)
-	df3['volume'].iloc[:6] = df3['volume'].iloc[6] / 6
-	df3['volume'].iloc[6] = df3['volume'].iloc[6] / 6
-	df3['volume'].iloc[-5:] = df3['volume'].iloc[-1]/5
-
-	#TODO: FIXED ME, no nan in volume!
-
-
-	df = df3.reset_index().rename({'index':'timestamp'}, axis=1)
+def process_seq_data(df, last_close, calculate_values):
+	df = df.reset_index().rename({'index':'timestamp'}, axis=1)
 
 	#df['timestamp'] = pd.to_datetime(df['time_stamp'], format="%Y-%m-%d %H:%M:%S").dt.tz_convert('Europe/Stockholm')
 	df['ema_1'] = df['last']
@@ -217,6 +184,90 @@ def preprocessing_daily_data(df, last_close=None, calculate_values=True):
 
 	return df
 
+
+def processing_future_data(df, last_close=None, calculate_values=True):
+	open_today = df['last'].iloc[0]
+	ts = df['timestamp'].iloc[0]
+	hour = ts.hour
+
+	periods = 156  
+
+	if hour == 9:
+		real_length = 156
+		start = "8:55:00"
+	elif hour == 13:
+		real_length = 126
+		start = "13:25:00"
+	elif hour == 21:
+		real_length = 126
+		start = "20:55:00"
+
+	start_time_str = "{}-{:02d}-{:02d} {}".format(ts.year, ts.month, ts.day, start)
+	start_ts = pd.Timestamp(start_time_str, tz=ts.tz)
+
+	dti = pd.date_range(start_ts , periods=periods, freq='min').to_series(keep_tz=True).rename('time')
+	df = df.set_index('timestamp')
+	df = df.join(dti, how='right')
+
+	if last_close == None: # the first day, we must set the value from 8.55-8.59 as same as 9.00
+	    df['last'].iloc[0] = df['last'].iloc[6]
+	else:
+	    df['last'].iloc[0] = last_close
+
+
+	# if the daily data is not started from 9:00:00, we must set it as the open price.
+	if df['last'].iloc[6] != open_today:
+		df['last'].iloc[6] = open_today
+
+	df['last'].interpolate(method='linear', inplace=True)
+
+
+
+
+	df['volume'].iloc[:6] = df['volume'].iloc[6] / 6
+	df['volume'].iloc[6] = df['volume'].iloc[6] / 6
+
+	df['last'].iloc[real_length:periods] = np.nan
+	df['volume'].iloc[real_length:periods] = np.nan
+	return process_seq_data(df, last_close, calculate_values)
+
+# input: df - dataframe, must have timestamp, 
+def preprocessing_daily_data(df, last_close=None, calculate_values=True):
+	# if the data is not from 9:00:00, we must fix it.
+	open_today = df['last'].iloc[0]
+	# some data might miss, we must make a right join with full time series
+	# and do fillna.
+
+	df2 = df.set_index('timestamp')
+	ts = df2.index.min()
+	start_time_str = "{}-{:02d}-{:02d} 8:54:00".format(ts.year, ts.month, ts.day)
+	start_ts = pd.Timestamp(start_time_str, tz=ts.tz)
+	# periods=510 means from 9 to 17.29
+	dti = pd.date_range(start_ts , periods=516, freq='min').to_series(keep_tz=True).rename('time')
+	# remove from 17.25 - 17.28
+	#dti.drop(dti.tail(5).head(4).index, inplace=True)
+	df = df2.join(dti, how='right')
+
+	if last_close == None: # the first day, we must set the value from 8.55-8.59 as same as 9.00
+	    df['last'].iloc[0] = df['last'].iloc[6]
+	else:
+	    df['last'].iloc[0] = last_close
+
+
+	# if the daily data is not started from 9:00:00, we must set it as the open price.
+	if df['last'].iloc[6] != open_today:
+		df['last'].iloc[6] = open_today
+
+
+	df['last'].interpolate(method='linear', inplace=True)
+	df['volume'].iloc[:6] = df['volume'].iloc[6] / 6
+	df['volume'].iloc[6] = df['volume'].iloc[6] / 6
+	df['volume'].iloc[-5:] = df['volume'].iloc[-1]/5
+
+	return process_seq_data(df, calculate_values)
+
+
+
 def datetime_2_timestamp(dt):
 	return pd.Timestamp(dt, tz='Europe/Stockholm')
 
@@ -225,6 +276,11 @@ def add_step_columns(df):
     day_of_week = df['timestamp'].iloc[0].weekday()
     df['step_of_week'] = len(df) * day_of_week + df['step_of_day']
     return df
+
+def futures_add_step_columns(df):
+	df['step_of_day'] = df.apply(lambda x: x.timestamp.hour*60+x.timestamp.minute, axis=1)
+	df['step_of_week'] = df.apply(lambda x: x.timestamp.weekday()*24*60+x.timestamp.hour*60+x.timestamp.minute, axis=1)
+	return df
 
 async def write_transaction(conn, stock_id, time, transaction):
 	try:
@@ -277,3 +333,7 @@ def get_stock_change_rate(stock_name, start_day_index, end_day_index=None, overn
 	np_rate_list = np.array(rate_list)
 	total_profit = np.prod(np_rate_list)-1
 	return total_profit, (np_rate_list-1).mean()
+
+def print_verbose_func(verbose, msg):
+    if verbose == True:
+        print(msg)
