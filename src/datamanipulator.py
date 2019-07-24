@@ -294,6 +294,6 @@ class DataManipulator:
             if daily_arr.shape[1] == 516:
                 daily_arr = remove_centralized(daily_arr)
 
-            assert(daily_arr.shape[1]==504)
-
+            #assert(daily_arr.shape[1]==504)
+            
         return daily_arr
