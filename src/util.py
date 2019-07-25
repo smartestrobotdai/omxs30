@@ -61,7 +61,7 @@ def md5(in_str):
 
 
 def remove_centralized(data):
-	assert(data.shape[1]==516)
+	assert(data.shape[1]==516 or data.shape[1]==156)
 	return data[:,7:-5]
 
 def add_centralized(data):

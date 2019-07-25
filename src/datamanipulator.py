@@ -291,7 +291,7 @@ class DataManipulator:
         # remove the centralized bid part of data.
         # from 9:01 to 17:24
         if is_remove_centralized == True:
-            if daily_arr.shape[1] == 516:
+            if daily_arr.shape[1] == 516 or daily_arr.shape[1] == 156:
                 daily_arr = remove_centralized(daily_arr)
 
             #assert(daily_arr.shape[1]==504)
