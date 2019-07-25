@@ -7,6 +7,12 @@ from ipywidgets import interact
 import ipywidgets as widgets
 import pandas as pd
 
+# historic_data format:
+# shape(days, steps, columns)
+# columns: time, predicted_value, price, stock_change_rate, asset_change_rate, action, real_value
+
+
+
 class HistoricData:
   def __init__(self, start_day_index, end_day_index):
     pass
@@ -75,8 +81,8 @@ class HistoricData:
     return self.data[training_data_length:]
 
   def get_daily_data(self):
-    stock_change_rate = self.data[:,:,3]
-    asset_change_rate = self.data[:,:,4]
+    stock_change_rate = np.nan_to_num(self.data[:,:,3].astype(float))
+    asset_change_rate = np.nan_to_num(self.data[:,:,4].astype(float))
     daily_stock_change_rate = np.prod(stock_change_rate+1, axis=1)-1
     daily_asset_change_rate = np.prod(asset_change_rate+1, axis=1)-1
     date = self.data[:,0,0]
@@ -101,8 +107,8 @@ class HistoricData:
   def plot_helper(self, daily_data):
     x1 = daily_data[:,0]
 
-    stock_change = np.cumprod(daily_data[:,1]+1)
-    asset_change = np.cumprod(daily_data[:,2]+1)
+    stock_change = np.cumprod(np.nan_to_num(daily_data[:,1],0)+1)
+    asset_change = np.cumprod(np.nan_to_num(daily_data[:,2],0)+1)
 
     plt.subplot(1, 1, 1)
     
@@ -125,12 +131,18 @@ class HistoricData:
     interact(self.daily_plot_func, day_index=widgets.IntSlider(min=0, max=data_len-1, value=data_len-1))
 
 
+  def get_stock_daily_data(self, day_index):
+    return np.nan_to_num(self.data[day_index,:,3].astype(float))
+
+  def get_asset_daily_data(self, day_index):
+    return np.nan_to_num(self.data[day_index,:,4].astype(float))
+
   def daily_plot_func(self, day_index):
     strategy_model = self.strategy_model
     # the stock price change rate
-    stock = np.cumprod(self.data[day_index,:,3]+1)
+    stock = np.cumprod(self.get_stock_daily_data(day_index)+1)
     # the asset change rate
-    asset = np.cumprod(self.data[day_index,:,4]+1)
+    asset = np.cumprod(self.get_asset_daily_data(day_index)+1)
     # the date
     date = timestamp2date(self.data[day_index, 0, 0])
 

@@ -27,7 +27,7 @@ from historicdata import HistoricData
 
 
 class StockWorm:
-    def __init__(self, stock_name, stock_id, input_data_path, save_path=None, is_future=False):
+    def __init__(self, stock_name, stock_id, input_data_path, save_path=None, is_future=False, slippage=0):
         self.stock_name = stock_name
         self.stock_id = stock_id 
         self.input_data_path = input_data_path
@@ -37,6 +37,7 @@ class StockWorm:
         self.learning_end_date = None
         self.historic_data = None
         self.data_today = []
+        self.slippage = slippage
 
     def validate(self, features, start_day_index, end_day_index):
         learning_period = int(features[4])
@@ -84,8 +85,9 @@ class StockWorm:
         self.model = model
 
         strategy_data_input, real_values, errors_daily = self.test_model_base(start_day_index, end_day_index)
-        if strategy_features is None:
-            strategy_factory = TradeStrategyFactory(is_future=self.is_future)
+        strategy_factory = TradeStrategyFactory(is_future=self.is_future, slippage=self.slippage)
+
+        if strategy_features is None:    
             if is_test:
                 max_iter = 50
             else:
@@ -94,7 +96,8 @@ class StockWorm:
                 iter=1, max_iter=max_iter)
 
         else:
-            strategy_model = TradeStrategy(strategy_features)
+            strategy_model = strategy_factory.create_strategy(strategy_features)
+            
 
         total_profit, profit_daily, results = strategy_model.get_profit(strategy_data_input)
 

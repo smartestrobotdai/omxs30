@@ -57,7 +57,7 @@ class StockWormManager:
       {'name': 'rnn_type', 'type': 'discrete', 'domain': (0,1,2)},
       {'name': 'learning_period', 'type': 'discrete', 'domain': (20,30,40,50)},
       {'name': 'prediction_period', 'type': 'discrete', 'domain': (5,10,20)},
-      {'name': 'n_repeats', 'type': 'discrete', 'domain': (1,3)},
+      {'name': 'n_repeats', 'type': 'discrete', 'domain': (1,3,5)},
       {'name': 'beta', 'type': 'discrete', 'domain': (99,98)},
       {'name': 'ema', 'type': 'discrete', 'domain': (1,10,20)},
       {'name': 'time_format', 'type': 'discrete', 'domain': (0,1,2)}, #1 for stepofday, 2 for stepofweek
@@ -68,7 +68,7 @@ class StockWormManager:
       {'name': 'ref_stock_id', 'type': 'discrete', 'domain': (-1,)},
      ]
 
-    def __init__(self, stock_name, stock_data_path, npy_files_path, is_future=False):
+    def __init__(self, stock_name, stock_data_path, npy_files_path, is_future=False, slippage=0):
         self.stock_name = stock_name
 
         self.stock_id = get_stock_id_by_name(stock_name)
@@ -81,6 +81,7 @@ class StockWormManager:
         self.npy_files_path = npy_files_path
         self.worm_list = []
         self.is_future = is_future
+        self.slippage = slippage
 
     def search_worms(self, start_day_index, end_day_index, 
       max_iter=300, is_test=False):
@@ -128,7 +129,7 @@ class StockWormManager:
         if cached_result is not None:
             print("find from cache. skip...")
         else:
-            stock_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, is_future=self.is_future)
+            stock_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, is_future=self.is_future, slippage=self.slippage)
             if stock_worm.validate(features, start_day, end_day) == False:
               print("validate failed for worm: {}".format(self.get_parameter_str(features)))
               return np.array(-1).reshape((1,1))
@@ -179,7 +180,9 @@ class StockWormManager:
         strategy_features = top_worms[i, 15:21]
         md5 = top_worms[i, -1]
         model_save_path = self.get_model_save_path(start_day_index, end_day_index, md5)
-        new_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, model_save_path)
+        new_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, 
+          model_save_path, is_future=self.is_future, slippage=self.slippage)
+        
         if os.path.isdir(model_save_path) and new_worm.load() == True:
             pass
         else:

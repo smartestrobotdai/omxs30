@@ -185,7 +185,7 @@ def process_seq_data(df, last_close, calculate_values):
 	return df
 
 
-def processing_future_data(df, last_close=None, calculate_values=True):
+def process_future_data(df, last_close=None, calculate_values=True):
 	open_today = df['last'].iloc[0]
 	ts = df['timestamp'].iloc[0]
 	hour = ts.hour
@@ -335,5 +335,5 @@ def get_stock_change_rate(stock_name, start_day_index, end_day_index=None, overn
 	return total_profit, (np_rate_list-1).mean()
 
 def print_verbose_func(verbose, msg):
-    if verbose == True:
-        print(msg)
+  if verbose == True:
+      print(msg)

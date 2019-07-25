@@ -9,7 +9,7 @@ from optimizeresult import OptimizeResult
 from util import remove_centralized, print_verbose_func
 
 class TradeStrategyFuture:
-    def __init__(self, X_list, n_max_trades_per_day=4, slippage=1, courtage=0, is_future=False):
+    def __init__(self, X_list, n_max_trades_per_day=4, slippage=0, courtage=0, is_future=False):
         self.buy_threshold = X_list[0]
         self.sell_threshold = X_list[1]
         self.stop_loss = X_list[2]
@@ -65,6 +65,13 @@ class TradeStrategyFuture:
         if state == 1 and value < 0:
             return False
 
+    def get_action(self, value, buy_threshold, sell_threshold):
+        if value > buy_threshold:
+            return 1
+        elif value < sell_threshold:
+            return 2
+        else:
+            return 0
 
     def run_test_core(self, X_list, input_data, verbose=False):
         print_verbose = partial(print_verbose_func, verbose)
@@ -115,44 +122,47 @@ class TradeStrategyFuture:
             else:
                 values_ma = daily_data[:,1]
 
-
             for step in range(length):
                 time = daily_data[step][0]
                 value = values_ma[step]
                 price = daily_data[step][2]
 
                 cost = self.slippage / price + self.courtage
-                if state == 0 and n_trades < n_max_trades and \
+                if self.is_hold(state) == False and n_trades < n_max_trades and \
                     step < len(daily_data)-5 and \
                     step > skip_at_beginning and \
                     hit_stop == False:
-                        if value > buy_threshold:
-                            state = 1
-                            actions[day_idx][step] = 1  # do long
-                            print_verbose("do long at step: {} value:{} price:{}".format(step, value, price))
-                        elif value < sell_threshold:
-                            state = -1
-                            actions[day_idx][step] = 2  # do short
-                            print_verbose("do short at step: {} value:{} price:{}".format(step, value, price))
+                        action = self.get_action(value, buy_threshold, sell_threshold)
+                        if action != 0:
+                            actions[day_idx][step] = action  # do long
+                            if action == 1:  # long
+                                state = 1
+                                print_verbose("do long at step: {} value:{} price:{} cost:{}".format(step, value, price, cost))
+                            elif action == 2:  # short
+                                state = -1
+                                print_verbose("do short at step: {} value:{} price:{} cost:{}".format(step, value, price, cost))
 
-                        asset_change_rate[day_idx][step] = -cost
-                        tot_profit *= (1-cost)
-                        daily_profit *= (1-cost)
-                        trade_profit *= (1-cost)
-                        
+                            asset_change_rate[day_idx][step] = -cost
+                            tot_profit *= (1-cost)
+                            daily_profit *= (1-cost)
+                            trade_profit *= (1-cost)
+                            print_verbose("trade_profit:{}".format(trade_profit))
+
                 elif self.is_hold(state):
                     change_rate = stock_change_rate[day_idx][step]
                     if state == -1:
                         change_rate = -change_rate
-
                     trade_profit_no_stop = trade_profit*(1+change_rate)
                     if self.need_to_sell(value, state)  or \
-                        step == len(daily_data)-1 or \
+                        step == length-1 or \
                         trade_profit_no_stop-1 < stop_loss or \
                         trade_profit_no_stop-1 > stop_gain:
                         # don't do more trade today!
                         if trade_profit_no_stop-1 < stop_loss:
-                            print_verbose("stop loss stop trading!")
+                            print_verbose("stop loss stop trading! trade_profit: {}, \
+                                change_rate: {} stop_loss: {} price:{}".format(trade_profit, 
+                                change_rate, stop_loss, price))
+
                             hit_stop = True
                             assert(stop_loss < trade_profit-1)
                             change_rate = (1+max(stop_loss-(trade_profit-1),change_rate))*(1-cost)-1

@@ -30,6 +30,18 @@ class TradeStrategyFactory:
             self.optimize_result.load(cache_file)
         return
 
+    def create_strategy(self, features):
+        print("is_future")
+        print(self.is_future)
+        if self.is_future:
+            classTradeStrategy = TradeStrategyFuture
+        else:
+            classTradeStrategy = TradeStrategy
+
+        return classTradeStrategy(features, self.n_max_trades_per_day, 
+                self.slippage, self.courtage)
+
+
     def create_from_file(self, filename, n_number):
         optimize_result = OptimizeResult(result_column_index=-1)
         optimize_result.load(filename)
@@ -49,9 +61,6 @@ class TradeStrategyFactory:
 
     def create_trade_strategies(self, data, iter, max_iter=100):
         #assert(data.shape[1]==504)
-        print(data.shape)
-        print("strategy data input")
-        print(data)
         self.data = data
         init_numdata = int(max_iter / 4)
         trade_strategy_list = []
@@ -80,7 +89,7 @@ class TradeStrategyFactory:
             classTradeStrategy = TradeStrategyFuture
         else:
             classTradeStrategy = TradeStrategy
-            
+
         X_list = X_list[0]
 
         self.n_iter += 1
