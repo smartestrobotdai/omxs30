@@ -26,7 +26,8 @@ print("Top 10 Worms in {} results for {}: swarm: {}-{}".format(worm_results.get_
 worm_results.get_best_results(number)
 columns = ['n_neurons', 'learning_rate', 'num_layers', 'rnn_type', 'learning_period', 
 					'prediction_period', 'n_repeats', 'beta', 'ema', 'time_format', 'volume_input', 'use_centralized_bid', 
-					'split_daily_data', 'is_stateful', 'ref_stock_id', 'buy_threshold', 'sell_threshold', 'stop_gain', 'stop_gain', 'skip_at_beginning',
+					'split_daily_data', 'is_stateful', 'ref_stock_id', 'buy_threshold', 'sell_threshold', 'stop_gain', 
+					'stop_gain', 'skip_at_beginning', 'value_ma',
 					'total_profit', 'days', 'avg_error', 'avg_profit']
 print("Columns:")
 for i in range(len(columns)):
