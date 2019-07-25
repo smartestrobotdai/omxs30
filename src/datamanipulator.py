@@ -243,7 +243,7 @@ class DataManipulator:
         return price
 
     def get_ref_last_price(self, end_date=None):
-        return get_last_price(end_date, stock_id=self.ref_stock_id)
+        return self.get_last_price(end_date, stock_id=self.ref_stock_id)
 
     # input: array : [timestamp, price, volume]
     def get_realtime_input_data(self, realtime_raw_data):
