@@ -151,7 +151,7 @@ def create_if_not_exist(path):
     if not os.path.isdir(path):
         os.makedirs(path)
 
-def process_seq_data(df, last_close, calculate_values):
+def process_seq_data(df, calculate_values):
 	df = df.reset_index().rename({'index':'timestamp'}, axis=1)
 
 	#df['timestamp'] = pd.to_datetime(df['time_stamp'], format="%Y-%m-%d %H:%M:%S").dt.tz_convert('Europe/Stockholm')
