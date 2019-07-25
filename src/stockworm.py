@@ -519,8 +519,8 @@ if __name__ == '__main__':
     # stock_worm.save()
 
     print("Testing Realtime function:")
-    #stock_worm2 = StockWorm('AZN', 3524, npy_path, '../stock-data/AZN_3524/0-100/models/dcf2329e6a4e82d1/')
-    stock_worm2 = StockWorm('HM-B', 992, npy_path, './my_model')
+    stock_worm2 = StockWorm('AZN', 3524, npy_path, '../stock-data/AZN_3524/0-100/models/dcf2329e6a4e82d1/')
+    #stock_worm2 = StockWorm('HM-B', 992, npy_path, './my_model')
     stock_worm2.load()
     #stock_worm2.plot()
     # stock_worm2.report()
@@ -534,7 +534,8 @@ if __name__ == '__main__':
 
 
     print("Testing non-realtime function")
-    stock_worm3 = StockWorm('HM-B', 992, npy_path, './my_model')
+    #stock_worm3 = StockWorm('HM-B', 992, npy_path, './my_model')
+    stock_worm3 = StockWorm('AZN', 3524, npy_path, '../stock-data/AZN_3524/0-100/models/dcf2329e6a4e82d1/')
     stock_worm3.load()
     stock_worm3.test('190724')
     stock_worm3.save()
