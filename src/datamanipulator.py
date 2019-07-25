@@ -189,17 +189,27 @@ class DataManipulator:
 
         return self.purge_data_helper(input_np_data, ref_input_np_data)
 
-    def purge_data_realtime(self, dataframe):
+    def purge_data_realtime(self, dataframe, dataframe_ref):
         input_np_data = dataframe.to_numpy()
         shape = input_np_data.shape
         assert(shape[0] == 516)
         assert(shape[1] == 7)
+
+
+        if dataframe_ref is not None:
+            input_np_data_ref = dataframe_ref.to_numpy()
+            shape_ref = dataframe_ref.shape
+            assert(shape_ref[0] == 516)
+            assert(shape_ref[1] == 7)
+            input_np_data_ref = input_np_data_ref.reshape((1, shape[0], shape[1]))
+        else:
+            input_np_data_ref = None
+
         input_np_data = input_np_data.reshape((1, shape[0], shape[1]))
-        input_data, _, timestamp, price = self.purge_data_helper(input_np_data)
+
+        input_data, _, timestamp, price = self.purge_data_helper(input_np_data, input_np_data_ref)
         scaled_input_data = self.transform_input(input_data)
         return scaled_input_data, timestamp, price
-
-
     
     def prep_data(self, start_day_index, end_day_index):
         assert(self.initialized)
@@ -217,8 +227,11 @@ class DataManipulator:
         return data_input, data_output, timestamp, price
 
     # end date is the last day of the real time prediction day
-    def get_last_price(self, end_date=None):
-        npy_file_name = self.get_data_file_name()
+    def get_last_price(self, end_date=None, stock_id=None):
+        if stock_id is None:
+            stock_id = self.stock_id
+
+        npy_file_name = self.get_data_file_name(stock_id=stock_id)
         input_np_data = np.load(npy_file_name, allow_pickle=True)
         if end_date != None:
             day_index = self.date_2_day_index(end_date)
@@ -228,6 +241,9 @@ class DataManipulator:
             price = input_np_data[-1,-1,6]
 
         return price
+
+    def get_ref_last_price(self, end_date=None):
+        return get_last_price(end_date, stock_id=self.ref_stock_id)
 
     # input: array : [timestamp, price, volume]
     def get_realtime_input_data(self, realtime_raw_data):

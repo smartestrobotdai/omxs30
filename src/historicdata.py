@@ -17,6 +17,9 @@ class HistoricData:
   def __init__(self, start_day_index, end_day_index):
     pass
 
+  def get_data(self):
+    return self.data
+
   def set_training_data(self, data):
     self.data = data
     self.training_data_len = len(data)

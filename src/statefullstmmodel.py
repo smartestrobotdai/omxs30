@@ -278,3 +278,6 @@ class StatefulLstmModel:
         self.sess = tf.Session()
         saver.restore(self.sess, self.get_model_filename(path, date))
         print("Model restored.")
+
+        # in the case there is no need to predict, we must copy the current saved prediction states
+        self.volatile_prediction_states = copy.deepcopy(self.net_states.prediction_states)
