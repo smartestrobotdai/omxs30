@@ -12,6 +12,13 @@ stock_name = sys.argv[1]
 start_day_index = int(sys.argv[2])
 end_day_index = int(sys.argv[3])
 
+is_future = False
+slippage = 0
+if stock_name[:2] == "F-":
+	print("target is a future")
+	is_future = True
+	slippage = 1
+
 if len(sys.argv) == 5:
 	number = int(sys.argv[4])
 else:
@@ -19,7 +26,9 @@ else:
 
 stock_data_dir = get_stock_data_dir()
 preprocessed_data_dir = get_preprocessed_data_dir()
-stock_worm_manager = StockWormManager(stock_name, stock_data_dir, preprocessed_data_dir)
+stock_worm_manager = StockWormManager(stock_name, stock_data_dir, preprocessed_data_dir, 
+	is_future=is_future, slippage=slippage)
+
 swarm_path = stock_worm_manager.get_swarm_path(start_day_index, end_day_index)
 if not os.path.isdir(swarm_path):
 	print("{} does not exist, aborting...".format(swarm_path))
