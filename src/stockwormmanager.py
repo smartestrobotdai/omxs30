@@ -57,7 +57,7 @@ class StockWormManager:
       {'name': 'rnn_type', 'type': 'discrete', 'domain': (0,1,2)},
       {'name': 'learning_period', 'type': 'discrete', 'domain': (20,30,40,50)},
       {'name': 'prediction_period', 'type': 'discrete', 'domain': (5,10,20)},
-      {'name': 'n_repeats', 'type': 'discrete', 'domain': (1,3,5,10)},
+      {'name': 'n_repeats', 'type': 'discrete', 'domain': (1,3,5,10,20,30)},
       {'name': 'beta', 'type': 'discrete', 'domain': (99,98)},
       {'name': 'ema', 'type': 'discrete', 'domain': (1,10,20)},
       {'name': 'time_format', 'type': 'discrete', 'domain': (0,1,2)}, #1 for stepofday, 2 for stepofweek
