@@ -57,7 +57,7 @@ class StockWormManager:
       {'name': 'rnn_type', 'type': 'discrete', 'domain': (0,1,2)},
       {'name': 'learning_period', 'type': 'discrete', 'domain': (20,30,40,50)},
       {'name': 'prediction_period', 'type': 'discrete', 'domain': (5,10,20)},
-      {'name': 'n_repeats', 'type': 'discrete', 'domain': (1,3,5)},
+      {'name': 'n_repeats', 'type': 'discrete', 'domain': (1,3,5,10)},
       {'name': 'beta', 'type': 'discrete', 'domain': (99,98)},
       {'name': 'ema', 'type': 'discrete', 'domain': (1,10,20)},
       {'name': 'time_format', 'type': 'discrete', 'domain': (0,1,2)}, #1 for stepofday, 2 for stepofweek
@@ -65,7 +65,7 @@ class StockWormManager:
       {'name': 'use_centralized_bid', 'type': 'discrete', 'domain': (1,)},
       {'name': 'split_daily_data', 'type': 'discrete', 'domain': (0,)},
       {'name': 'is_stateful', 'type': 'discrete', 'domain': (0,1)},
-      {'name': 'ref_stock_id', 'type': 'discrete', 'domain': (-1,)},
+      {'name': 'ref_stock_id', 'type': 'discrete', 'domain': (-1,800005)},
      ]
 
     def __init__(self, stock_name, stock_data_path, npy_files_path, is_future=False, slippage=0):
@@ -182,7 +182,7 @@ class StockWormManager:
         model_save_path = self.get_model_save_path(start_day_index, end_day_index, md5)
         new_worm = StockWorm(self.stock_name, self.stock_id, self.npy_files_path, 
           model_save_path, is_future=self.is_future, slippage=self.slippage)
-        
+
         if os.path.isdir(model_save_path) and new_worm.load() == True:
             pass
         else:
