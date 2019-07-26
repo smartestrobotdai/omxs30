@@ -10,8 +10,11 @@ from nats.aio.errors import ErrConnectionClosed, ErrTimeout, ErrNoServers
 
 # note: time must be in seconds like 1562169308
 
-state = 0
-async def run(loop, stock_worm, stock_id):
+
+async def run(loop, stock_worm, stock_id, ref_stock_id):
+	state = 0
+	ref_data_arr = None
+	data_arr = None
 	# connect to NATS
 	try:
 		print("Connecting to NATS...")
@@ -40,17 +43,18 @@ async def run(loop, stock_worm, stock_id):
 	  print(error)
 	  sys.exit()
 
-	async def message_handler(msg):
-		global state
-		subject = msg.subject
-		reply = msg.reply
-		data = msg.data.decode()
-		print("Received a message on '{subject} {reply}': {data}".format(
-				subject=subject, reply=reply, data=data))
+	def copulas_synced(data_arr, ref_data_arr):
+		if data[-1].time == ref_data[-1].time:
+			return True
+		else:
+			return False
 
-		realtime_data_array = json.load(data)
-		for item in realtime_data_array:
-			value, action = stock_worm.test_realtime(item.time, item.last, item.volume)
+	async def handle_realtime_data(data_arr, ref_data_arr):
+		for i in range(len(data_arr)):
+			item = data_arr[i]
+			ref_item = ref_data_arr[i]
+
+			value, action = stock_worm.test_realtime(item.time, item.last, item.volume, ref_item.last)
 			if action == 1 and state == 0:
 				print("time:{} buy stock {} at price: {}".format(item.time, stock_id, item.last))
 				await write_transaction(conn, stock_id, item.time, "buy")
@@ -60,8 +64,39 @@ async def run(loop, stock_worm, stock_id):
 				await write_transaction(conn, stock_id, item.time, "sell")
 				state = 0
 
+	async def message_handler(msg):
+		nonlocal data_arr
 
-	sid = await nc.subscribe("instument-{}".format(stock_id), cb=message_handler)
+		subject = msg.subject
+		reply = msg.reply
+		data = msg.data.decode()
+		print("Received a message on '{subject} {reply}': {data}".format(
+				subject=subject, reply=reply, data=data))
+		data_arr = json.load(data)
+
+		if copulas_synced(data_arr, ref_data_arr):
+			await handle_realtime_data(data_arr, ref_data_arr)
+
+
+	async def ref_message_handler(msg):
+		nonlocal ref_data_arr
+		subject = msg.subject
+		reply = msg.reply
+		ref_data = msg.data.decode()
+		print("Received a message on '{subject} {reply}': {data}".format(
+				subject=subject, reply=reply, data=data))
+		ref_data_arr = json.load(ref_data)
+
+		if copulas_synced(data_arr, ref_data_arr):
+			await handle_realtime_data(data, ref_data)
+
+
+	print("starting monitor stock_id: {}".format(stock_id))
+	await nc.subscribe("instument-{}".format(stock_id), cb=message_handler)
+
+	print("starting monitor stock_id: {}".format(ref_stock_id))
+	await nc.subscribe("instument-{}".format(ref_stock_id), cb=ref_message_handler)
+
 
 if __name__ == '__main__':
 	if len(sys.argv) < 3:
@@ -74,11 +109,13 @@ if __name__ == '__main__':
 	stock_id = get_stock_id_by_name(stock_name)
 
 	stock_worm = StockWorm(stock_name, stock_id, npy_path, model_dir)
+
 	stock_worm.load()
 	stock_worm.test()
+	ref_stock_id = stock_worm.get_ref_stock_id()
 	stock_worm.start_realtime_prediction()
 
 	loop = asyncio.get_event_loop()
-	loop.create_task(run(loop, stock_worm, stock_id))
+	loop.create_task(run(loop, stock_worm, stock_id, ref_stock_id))
 	loop.run_forever()
 	loop.close()

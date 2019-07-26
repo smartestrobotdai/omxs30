@@ -491,6 +491,8 @@ class StockWorm:
         predicted_values = self.historic_data[day_index,:,1]
         return real_values, predicted_values
 
+    def get_ref_stock_id(self):
+        return self.data_manipulator.ref_stock_id
 
 if __name__ == '__main__':
     import shutil
