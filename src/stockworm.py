@@ -165,13 +165,13 @@ class StockWorm:
     # this method need to be called every minute.
     def test_realtime(self, timestamp, price, volume, ref_price=None):
         assert(self.last_price != None)
+        date_time = datetime.datetime.fromtimestamp(int(timestamp)//1000)
 
-
-        self.data_today.append([timestamp, price, volume])
+        self.data_today.append([date_time, price, volume])
         
         df_input = self.process_rt_data(self.data_today, self.last_price)
         if ref_price is not None:
-            self.data_ref_today.append([timestamp, ref_price, 0])
+            self.data_ref_today.append([date_time, ref_price, 0])
             df_input_ref = self.process_rt_data(self.data_ref_today, self.ref_last_price)
         else:
             df_input_ref = None
