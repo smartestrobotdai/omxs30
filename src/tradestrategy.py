@@ -128,18 +128,18 @@ class TradeStrategy:
                     trade_profit_no_stop = trade_profit*(1+change_rate)-1
                     if value < sell_threshold  or \
                         step == len(daily_data)-1 or \
-                        trade_profit_no_stop-1 < stop_loss or \
-                        trade_profit_no_stop-1 > stop_gain:
+                        trade_profit_no_stop < stop_loss or \
+                        trade_profit_no_stop > stop_gain:
                         # don't do more trade today!
-                        if trade_profit_no_stop-1 < stop_loss:
-                            print_verbose("stop loss stop trading!")
+                        if trade_profit_no_stop < stop_loss:
+                            print_verbose("stop loss stop trading! stop_loss:{}, trade_profit_no_stop:{}".format(stop_loss, trade_profit_no_stop))
                             hit_stop = True
                             assert(stop_loss < trade_profit-1)
                             change_rate = (1+max(stop_loss-(trade_profit-1),change_rate))*(1-cost)-1
 
 
-                        elif trade_profit_no_stop-1 > stop_gain:
-                            print_verbose("stop gain stop trading!")
+                        elif trade_profit_no_stop > stop_gain:
+                            print_verbose("stop loss stop trading! stop_gain:{}, trade_profit_no_stop:{}".format(stop_gain, trade_profit_no_stop))
                             hit_stop = True
                             assert(stop_gain > trade_profit-1)
                             change_rate = (1+min(stop_gain-(trade_profit-1),change_rate))*(1-cost)-1                            
@@ -152,8 +152,8 @@ class TradeStrategy:
                         daily_profit *= (1 + change_rate)
                         state = 0
                         n_trades += 1
-                        print_verbose("sell at step: {} price:{} trade_profit:{} hold_steps:{}".format(step, 
-                            price, trade_profit, hold_steps))
+                        print_verbose("sell at step: {} price:{} trade_profit:{} hold_steps:{} value:{}".format(step, 
+                            price, trade_profit, hold_steps, value))
 
                         trade_profit = 1
                         asset_change_rate[day_idx][step] = change_rate
