@@ -9,7 +9,7 @@ import os
 from datamanipulator import DataManipulator
 from statefullstmmodel import StatefulLstmModel
 from functools import partial
-from tradestrategy import TradeStrategyFactory
+from tradestrategyfactory import TradeStrategyFactory
 from stockworm import StockWorm
 from optimizeresult import OptimizeResult
 from util import *
