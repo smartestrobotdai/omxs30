@@ -7,7 +7,7 @@ from sklearn.preprocessing import MinMaxScaler,StandardScaler
 from hmmlearn import hmm
 from numpy import linalg
 import pandas as pd
-from tradestrategy import TradeStrategyFactory, TradeStrategy
+from tradestrategyfactory import TradeStrategyFactory, TradeStrategy
 from historicdata import HistoricData
 import pickle
 
@@ -175,7 +175,7 @@ class HmmModel:
 
     strategy_model = self.strategy_model
 
-    total_profit, profit_daily, training_results = strategy_model.get_profit(strategy_data_input)
+    total_profit, profit_daily, training_results = strategy_model.get_profit(strategy_data_input, verbose=True)
     print("test finished: total_profit: {}, profit_daily: {}".format(total_profit, profit_daily))
 
     print(strategy_data_input.shape)
